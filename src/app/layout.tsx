@@ -13,9 +13,20 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
+const TAGLINE = "The market news that matters to your watchlist.";
+const DESCRIPTION =
+  "Know what matters across your watchlist, from one feed. Join the EquityCairn beta.";
+
 export const metadata: Metadata = {
-  title: "EquityCairn",
-  description: "The market news that matters to your watchlist.",
+  title: `EquityCairn: ${TAGLINE}`,
+  description: DESCRIPTION,
+  openGraph: {
+    title: TAGLINE,
+    description: DESCRIPTION,
+    siteName: "EquityCairn",
+    type: "website",
+    locale: "en_US",
+  },
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
