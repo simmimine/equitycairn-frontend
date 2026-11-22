@@ -1,0 +1,17 @@
+node_modules
+.next
+.git
+.gitignore
+e2e
+playwright-report
+test-results
+coverage
+Dockerfile
+.dockerignore
+*.md
+.env*
+.trail
+.claude
+opencode.json
+test-results
+*.tsbuildinfo
