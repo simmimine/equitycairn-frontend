@@ -10,8 +10,8 @@ export async function joinBeta(
   _prev: JoinBetaResult | null,
   formData: FormData,
 ): Promise<JoinBetaResult> {
-  // Honeypot: bots fill the hidden "website" field; pretend success.
-  const honeypot = formData.get("website");
+  // Honeypot: bots fill the hidden "company_url_hp" field; pretend success.
+  const honeypot = formData.get("company_url_hp");
   if (typeof honeypot === "string" && honeypot !== "") {
     return { ok: true };
   }
@@ -30,8 +30,11 @@ export async function joinBeta(
       return { ok: false, error: "server_error" };
     }
     return { ok: true };
-  } catch {
-    console.error("joinBeta unexpected failure");
+  } catch (err) {
+    console.error(
+      "joinBeta unexpected failure",
+      err instanceof Error ? err.message : "unknown",
+    );
     return { ok: false, error: "server_error" };
   }
 }

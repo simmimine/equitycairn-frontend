@@ -59,7 +59,9 @@ describe("SignupForm", () => {
 
     const button = await screen.findByRole("button");
     await waitFor(() => expect(button).toBeDisabled());
-    expect(screen.getByRole("status")).toBeInTheDocument();
+    expect(button).toHaveAttribute("aria-busy", "true");
+    expect(button).toHaveAccessibleName("Join the beta");
+    expect(screen.getByLabelText(/email/i)).toHaveAttribute("readonly");
 
     resolve({ ok: true });
     await waitFor(() => expect(button).toBeEnabled());
@@ -128,12 +130,64 @@ describe("SignupForm", () => {
   it("hides the honeypot from assistive tech and keyboard", () => {
     const { container } = setup();
     const honeypot = container.querySelector<HTMLInputElement>(
-      'input[name="website"]',
+      'input[name="company_url_hp"]',
     );
     expect(honeypot).not.toBeNull();
     expect(honeypot).toHaveAttribute("tabindex", "-1");
     expect(honeypot?.closest("[aria-hidden='true']")).not.toBeNull();
     expect(screen.queryByLabelText(/website/i)).toBeNull();
+  });
+
+  it("keeps the input enabled while pending so focus is not lost", async () => {
+    let resolve!: (result: JoinBetaResult) => void;
+    joinBeta.mockReturnValue(
+      new Promise<JoinBetaResult>((r) => {
+        resolve = r;
+      }),
+    );
+    const { user } = setup();
+    const input = screen.getByLabelText(/email/i);
+    await user.type(input, "a@b.co");
+    await user.keyboard("{Enter}");
+    await waitFor(() => expect(screen.getByRole("button")).toBeDisabled());
+    expect(input).not.toBeDisabled();
+    expect(input).toHaveFocus();
+
+    resolve({ ok: true });
+    await waitFor(() => expect(screen.getByRole("button")).toBeEnabled());
+  });
+
+  it("keeps a single status region mounted and fills it on success", async () => {
+    joinBeta.mockResolvedValue({ ok: true } satisfies JoinBetaResult);
+    const { user } = setup();
+    const status = screen.getByRole("status");
+    expect(status).toBeEmptyDOMElement();
+    await user.type(screen.getByLabelText(/email/i), "a@b.co");
+    await user.click(screen.getByRole("button"));
+    await screen.findByText(/you're on the list/i);
+    expect(screen.getByRole("status")).toBe(status);
+  });
+
+  it("clears stale server errors and success messages on edit", async () => {
+    joinBeta.mockResolvedValueOnce({
+      ok: false,
+      error: "server_error",
+    } satisfies JoinBetaResult);
+    const { user } = setup();
+    const input = screen.getByLabelText(/email/i);
+    await user.type(input, "a@b.co");
+    await user.click(screen.getByRole("button"));
+    await screen.findByText("Something went wrong, please try again");
+    await user.type(input, "m");
+    expect(
+      screen.queryByText("Something went wrong, please try again"),
+    ).toBeNull();
+
+    joinBeta.mockResolvedValueOnce({ ok: true } satisfies JoinBetaResult);
+    await user.click(screen.getByRole("button"));
+    await screen.findByText(/you're on the list/i);
+    await user.type(input, "x@y.co");
+    expect(screen.queryByText(/you're on the list/i)).toBeNull();
   });
 
   it("uses the id prop for unique input ids", () => {

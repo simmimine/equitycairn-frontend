@@ -34,7 +34,7 @@ The landing page's beta sign-up form is handled by a server action (`joinBeta`) 
 
 Locally, copy `.env.example` to `.env.local` and fill them in. In deployment (Cloud Run), set `SUPABASE_URL` as an env var and `SUPABASE_SECRET_KEY` as a secret (for example from Secret Manager) at deploy time. The production build does not need them, but sign-ups fail at runtime without them.
 
-Sign-ups are stored in the `public.beta_signups` table, created by the migration in `supabase/migrations/`. Row Level Security is enabled with no policies for `anon` or `authenticated`, so only the secret key (server side) can read or write it.
+Sign-ups are stored in the `public.beta_signups` table, created by the migration `supabase/migrations/20261122231834_create_beta_signups.sql`. Row Level Security is enabled with no policies for `anon` or `authenticated`, so only the secret key (server side) can read or write it.
 
 ## Docker / Cloud Run
 
@@ -43,6 +43,6 @@ pnpm docker:build
 pnpm docker:run
 ```
 
-These wrap `sudo docker build -t equitycairn-frontend .` and `sudo docker run --rm -p 8080:8080 --env-file .env.local equitycairn-frontend`. `docker:run` passes your local `.env.local` into the container; on Cloud Run, set the environment variables and secrets at deploy time instead (see below).
+These wrap `sudo docker build -t equitycairn-frontend .` and `sudo docker run --rm -p 8080:8080 --env-file .env.local equitycairn-frontend`. `docker:run` passes your local `.env.local` into the container; on Cloud Run, set the environment variables and secrets at deploy time instead (see above). `pnpm docker:run` needs `.env.local` to exist and uses Docker `--env-file` semantics: write unquoted `KEY=value` lines, because quotes are NOT stripped.
 
 The image uses Next's `standalone` output and listens on `$PORT` (8080 by default), as Cloud Run expects.

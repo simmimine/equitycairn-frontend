@@ -62,7 +62,7 @@ describe("joinBeta", () => {
   it("silently succeeds when the honeypot is filled", async () => {
     const result = await joinBeta(
       null,
-      form({ email: "ann@example.com", website: "http://spam" }),
+      form({ email: "ann@example.com", company_url_hp: "http://spam" }),
     );
     expect(result).toEqual({ ok: true });
     expect(getSupabaseAdmin).not.toHaveBeenCalled();
@@ -77,5 +77,17 @@ describe("joinBeta", () => {
       ok: false,
       error: "server_error",
     });
+  });
+
+  it("logs the thrown error message but never the email", async () => {
+    getSupabaseAdmin.mockImplementationOnce(() => {
+      throw new Error("missing SUPABASE_URL");
+    });
+    const spy = vi.spyOn(console, "error").mockImplementation(() => {});
+    await joinBeta(null, form({ email: "ann@example.com" }));
+    const logged = JSON.stringify(spy.mock.calls);
+    expect(logged).toContain("missing SUPABASE_URL");
+    expect(logged).not.toContain("ann@example.com");
+    spy.mockRestore();
   });
 });

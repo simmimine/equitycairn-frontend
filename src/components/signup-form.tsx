@@ -30,10 +30,13 @@ export function SignupForm({ id = "email" }: { id?: string }) {
     null,
   );
   const [clientError, setClientError] = useState<string | null>(null);
+  // Result the user has edited past; hides stale server messages until a new one arrives.
+  const [dismissed, setDismissed] = useState<JoinBetaResult | null>(null);
+  const current = state === dismissed ? null : state;
 
   const serverError =
-    state && !state.ok
-      ? state.error === "invalid_email"
+    current && !current.ok
+      ? current.error === "invalid_email"
         ? INVALID_EMAIL_MESSAGE
         : SERVER_ERROR_MESSAGE
       : null;
@@ -67,27 +70,27 @@ export function SignupForm({ id = "email" }: { id?: string }) {
               autoComplete="email"
               placeholder="you@example.com"
               required
-              disabled={pending}
+              readOnly={pending}
               aria-invalid={invalid || undefined}
               aria-describedby={invalid ? errorId : descriptionId}
               value={email}
               onChange={(event) => {
                 setEmail(event.target.value);
                 setClientError(null);
+                setDismissed(state);
               }}
             />
-            <Button type="submit" disabled={pending}>
-              {pending && <Spinner data-icon="inline-start" />}
+            <Button type="submit" disabled={pending} aria-busy={pending}>
+              {pending && (
+                <Spinner data-icon="inline-start" aria-hidden="true" />
+              )}
               Join the beta
             </Button>
           </div>
-          {invalid ? (
-            <FieldError id={errorId}>{error}</FieldError>
-          ) : state?.ok ? (
-            <p role="status" className="text-sm text-primary">
-              You&apos;re on the list
-            </p>
-          ) : null}
+          {invalid && <FieldError id={errorId}>{error}</FieldError>}
+          <p role="status" className="text-sm text-primary empty:hidden">
+            {!invalid && current?.ok ? "You're on the list" : null}
+          </p>
           <FieldDescription id={descriptionId}>
             No spam. We&apos;ll only email you about the beta.
           </FieldDescription>
@@ -96,7 +99,12 @@ export function SignupForm({ id = "email" }: { id?: string }) {
           aria-hidden="true"
           className="pointer-events-none absolute -left-[9999px] opacity-0"
         >
-          <input type="text" name="website" tabIndex={-1} autoComplete="off" />
+          <input
+            type="text"
+            name="company_url_hp"
+            tabIndex={-1}
+            autoComplete="off"
+          />
         </div>
       </FieldGroup>
     </form>
