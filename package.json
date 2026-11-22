@@ -13,8 +13,8 @@
     "test:e2e": "playwright test",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "docker:build": "docker build -t equitycairn-frontend .",
-    "docker:run": "docker run --rm -p 8080:8080 equitycairn-frontend"
+    "docker:build": "sudo docker build -t equitycairn-frontend .",
+    "docker:run": "sudo docker run --rm -p 8080:8080 --env-file .env.local equitycairn-frontend"
   },
   "dependencies": {
     "@base-ui/react": "^1.9.0",

@@ -23,6 +23,19 @@ First-time setup: `pnpm install`, `pnpm exec playwright install chromium`, and `
 
 Add shadcn components with `pnpm dlx shadcn@latest add <component>`.
 
+## Configuration and beta sign-ups
+
+The landing page's beta sign-up form is handled by a server action (`joinBeta`) that writes to Supabase. It needs two **server-only** variables (never prefix them with `NEXT_PUBLIC_`, or they would be exposed to the browser):
+
+| Variable              | Purpose                                                |
+| --------------------- | ------------------------------------------------------ |
+| `SUPABASE_URL`        | Supabase project URL                                   |
+| `SUPABASE_SECRET_KEY` | Supabase secret key (bypasses RLS; keep it out of git) |
+
+Locally, copy `.env.example` to `.env.local` and fill them in. In deployment (Cloud Run), set `SUPABASE_URL` as an env var and `SUPABASE_SECRET_KEY` as a secret (for example from Secret Manager) at deploy time. The production build does not need them, but sign-ups fail at runtime without them.
+
+Sign-ups are stored in the `public.beta_signups` table, created by the migration in `supabase/migrations/`. Row Level Security is enabled with no policies for `anon` or `authenticated`, so only the secret key (server side) can read or write it.
+
 ## Docker / Cloud Run
 
 ```sh
@@ -30,6 +43,6 @@ pnpm docker:build
 pnpm docker:run
 ```
 
-These wrap `docker build -t equitycairn-frontend .` and `docker run --rm -p 8080:8080 equitycairn-frontend`. If your user can't access the Docker socket, run them with `sudo`.
+These wrap `sudo docker build -t equitycairn-frontend .` and `sudo docker run --rm -p 8080:8080 --env-file .env.local equitycairn-frontend`. `docker:run` passes your local `.env.local` into the container; on Cloud Run, set the environment variables and secrets at deploy time instead (see below).
 
 The image uses Next's `standalone` output and listens on `$PORT` (8080 by default), as Cloud Run expects.
