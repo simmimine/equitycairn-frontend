@@ -63,7 +63,7 @@ Copy is drafted by the builder from the Notion plan and kept within the anti-goa
 
 ### Sign-up flow
 
-- Component: client `SignupForm` using `Field`, `Input` (`type="email"`, `autocomplete="email"`), `Button` with `Spinner` while pending, result shown with `toast` plus inline `FieldError`. A visually hidden honeypot field (`website`) that humans never fill.
+- Component: client `SignupForm` using `Field`, `Input` (`type="email"`, `autocomplete="email"`), `Button` with `Spinner` while pending, result shown with `toast` plus inline `FieldError`. A visually hidden honeypot field (`company_url_hp`) that humans never fill.
 - Server action `joinBeta(formData)` in the app (server-only):
   1. If the honeypot is filled: return success silently, store nothing.
   2. **Validate email** with a shared zod schema (same schema used for client-side feedback; server is authoritative): trim, lowercase, max 254 chars, valid email format, reject empty. Invalid input returns a field error message without hitting the database.

@@ -80,9 +80,9 @@
 - Produces: `getSupabaseAdmin(): SupabaseClient` (server-only; throws if env missing; `auth.persistSession: false`); `joinBeta(prev: JoinBetaResult | null, formData: FormData): Promise<JoinBetaResult>` marked `"use server"`.
 
 - [ ] **Step 1: Install** `pnpm add @supabase/supabase-js server-only`.
-- [ ] **Step 2: Write failing tests** mocking `@/lib/supabase/server`: valid email → inserts `{ email: "ann@example.com", source: "landing" }` into `beta_signups`, returns `{ ok: true }`; Postgres error code `23505` → `{ ok: true }`; other error → `{ ok: false, error: "server_error" }` and nothing logged contains the email; invalid email → `{ ok: false, error: "invalid_email" }` and the client is never called; `website` field non-empty → `{ ok: true }`, client never called; `getSupabaseAdmin` throwing → `server_error`.
+- [ ] **Step 2: Write failing tests** mocking `@/lib/supabase/server`: valid email → inserts `{ email: "ann@example.com", source: "landing" }` into `beta_signups`, returns `{ ok: true }`; Postgres error code `23505` → `{ ok: true }`; other error → `{ ok: false, error: "server_error" }` and nothing logged contains the email; invalid email → `{ ok: false, error: "invalid_email" }` and the client is never called; `company_url_hp` field non-empty → `{ ok: true }`, client never called; `getSupabaseAdmin` throwing → `server_error`.
 - [ ] **Step 3: Run** `pnpm vitest run src/app/actions/join-beta.test.ts`. Expected: FAIL.
-- [ ] **Step 4: Implement** the client (reads `SUPABASE_URL`, `SUPABASE_SECRET_KEY`; imports `server-only`) and the action (honeypot field name `website`; order: honeypot → parse → insert; catch all errors to `server_error`).
+- [ ] **Step 4: Implement** the client (reads `SUPABASE_URL`, `SUPABASE_SECRET_KEY`; imports `server-only`) and the action (honeypot field name `company_url_hp`; order: honeypot → parse → insert; catch all errors to `server_error`).
 - [ ] **Step 5: Add** `SUPABASE_URL=` and `SUPABASE_SECRET_KEY=` (blank values, with a comment) to `.env.example`; confirm `.env*.local` is git-ignored.
 - [ ] **Step 6: Run** the tests. Expected: PASS.
 - [ ] **Step 7: Commit** `feat: add joinBeta server action`.
@@ -102,7 +102,7 @@
 - [ ] **Step 1: Add components** with `pnpm dlx shadcn@latest add input field spinner <toast>`, then read and fix the generated files per the shadcn rules; mount the toaster once in `src/app/layout.tsx`.
 - [ ] **Step 2: Write failing tests** (mock `joinBeta`): typing an invalid address and submitting shows an inline error and does not call the action; a valid address calls it with the `FormData`; while pending the button is disabled and shows a `Spinner`; `{ ok: true }` shows the success message ("You're on the list") and clears the field; `server_error` shows "Something went wrong, please try again"; the honeypot input is `aria-hidden`, `tabIndex=-1`, and not focusable by label.
 - [ ] **Step 3: Run** `pnpm vitest run src/components/signup-form.test.tsx`. Expected: FAIL.
-- [ ] **Step 4: Implement** `SignupForm` with `useActionState(joinBeta, null)`, `FieldGroup`/`Field`, `Input type="email" autoComplete="email" required`, client pre-check via `parseEmail`, `data-invalid` + `aria-invalid` on error, hidden honeypot `website`, helper text "No spam. We'll only email you about the beta."
+- [ ] **Step 4: Implement** `SignupForm` with `useActionState(joinBeta, null)`, `FieldGroup`/`Field`, `Input type="email" autoComplete="email" required`, client pre-check via `parseEmail`, `data-invalid` + `aria-invalid` on error, hidden honeypot `company_url_hp`, helper text "No spam. We'll only email you about the beta."
 - [ ] **Step 5: Run** the tests. Expected: PASS.
 - [ ] **Step 6: Commit** `feat: add beta signup form`.
 
