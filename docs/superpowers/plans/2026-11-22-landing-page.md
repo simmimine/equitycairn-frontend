@@ -36,10 +36,12 @@
 ### Task 1: Email validation schema
 
 **Files:**
+
 - Create: `src/lib/signup/email.ts`, `src/lib/signup/types.ts`
 - Test: `src/lib/signup/email.test.ts`
 
 **Interfaces:**
+
 - Produces: `parseEmail(input: unknown): { ok: true; email: string } | { ok: false }` (trimmed, lowercased); `JoinBetaResult = { ok: true } | { ok: false; error: "invalid_email" | "server_error" }` in `types.ts`.
 
 - [ ] **Step 1: Install zod** with `pnpm add zod` (pinned in lockfile).
@@ -52,9 +54,11 @@
 ### Task 2: Supabase table and migration
 
 **Files:**
+
 - Create: `supabase/migrations/<timestamp>_create_beta_signups.sql`
 
 **Interfaces:**
+
 - Produces: table `public.beta_signups(id uuid pk default gen_random_uuid(), email text not null check (char_length(email) <= 254), created_at timestamptz not null default now(), source text)` with `create unique index beta_signups_email_lower_key on public.beta_signups (lower(email))`; RLS enabled; `revoke all on public.beta_signups from anon, authenticated`.
 
 - [ ] **Step 1: Load the `supabase-postgres-best-practices` skill**, then write the migration file (generate the timestamped name with a `YYYYMMDDHHMMSS_` prefix).
@@ -66,10 +70,12 @@
 ### Task 3: Server client and `joinBeta` action
 
 **Files:**
+
 - Create: `src/lib/supabase/server.ts`, `src/app/actions/join-beta.ts`, `.env.example` (update if it exists)
 - Test: `src/app/actions/join-beta.test.ts`
 
 **Interfaces:**
+
 - Consumes: `parseEmail`, `JoinBetaResult` (Task 1).
 - Produces: `getSupabaseAdmin(): SupabaseClient` (server-only; throws if env missing; `auth.persistSession: false`); `joinBeta(prev: JoinBetaResult | null, formData: FormData): Promise<JoinBetaResult>` marked `"use server"`.
 
@@ -84,10 +90,12 @@
 ### Task 4: SignupForm component
 
 **Files:**
+
 - Create: `src/components/signup-form.tsx`; add shadcn `input`, `field`, `spinner`, `sonner`/`toast` (check the shadcn skill for the Base UI toast name) via the CLI
 - Test: `src/components/signup-form.test.tsx`
 
 **Interfaces:**
+
 - Consumes: `joinBeta`, `JoinBetaResult`, `parseEmail`.
 - Produces: `<SignupForm id?: string />` (client component; accepts `id` so two instances on one page have unique input ids).
 
@@ -101,10 +109,12 @@
 ### Task 5: Landing page sections
 
 **Files:**
+
 - Create: `src/components/landing/{site-header,hero,sample-feed,how-it-works,trust,faq,final-cta,site-footer}.tsx`; add shadcn `card`, `badge`, `separator`, `accordion` via the CLI
 - Modify: `src/app/page.tsx`, `src/app/layout.tsx` (metadata title/description/openGraph from the tagline), `src/app/page.test.tsx`, `e2e/home.spec.ts`
 
 **Interfaces:**
+
 - Consumes: `SignupForm` (Task 4).
 - Produces: `Home` composing header → hero (headline "The market news that matters to your watchlist.", sub-line "Know what matters across your watchlist, from one feed.", `SignupForm id="hero-email"`, `SampleFeed`) → how it works (3 cards: follow tickers · one grouped feed · go to the original source) → trust (attribution, duplicate grouping, links to originals, no trading advice) → FAQ (5 questions from the spec) → final CTA (`SignupForm id="cta-email"`) → footer. The header "Join the beta" button links to `#hero-email`-containing section anchor `#join`.
 
@@ -119,6 +129,7 @@
 ### Task 6: Configuration, docs and end-to-end verification
 
 **Files:**
+
 - Modify: `README.md`, `package.json` (`docker:run` to pass `--env-file .env.local`)
 
 - [ ] **Step 1: Update README**: document `SUPABASE_URL` and `SUPABASE_SECRET_KEY` (server-only, set as Cloud Run env/secrets in deploy), and the sign-up table.

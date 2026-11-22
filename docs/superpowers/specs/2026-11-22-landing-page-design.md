@@ -43,6 +43,7 @@ The Notion plan also names this page as an early experiment: a landing page with
 **Layout** (mockups reviewed in the browser): A focused hero + sample feed; B dark centred editorial; C long story-driven scroll. **Chosen: A**, extended with a short "how it works" and FAQ. It puts sign-up in the first screen and shows the product, without the build and copy burden of C.
 
 **Sign-up storage:**
+
 1. Server action inserting with a server-only secret key into a table with no `anon` grants. **Chosen.** Closes the public API to the table, so spam controls cannot be bypassed.
 2. Server action with publishable key and an `anon` insert-only RLS policy. Simpler key handling, but anyone can write to the table directly.
 3. Browser inserts directly. Fewest parts, weakest spam protection.
