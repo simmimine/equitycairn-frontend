@@ -1,6 +1,6 @@
 # EquityCairn landing page — design
 
-Status: awaiting approval. Date: 2026-11-22.
+Status: approved and implemented (PR #2). Date: 2026-11-22.
 
 ## Intent
 
@@ -63,7 +63,7 @@ Copy is drafted by the builder from the Notion plan and kept within the anti-goa
 
 ### Sign-up flow
 
-- Component: client `SignupForm` using `Field`, `Input` (`type="email"`, `autocomplete="email"`), `Button` with `Spinner` while pending, result shown with `toast` plus inline `FieldError`. A visually hidden honeypot field (`company_url_hp`) that humans never fill.
+- Component: client `SignupForm` using `Field`, `Input` (`type="email"`, `autocomplete="email"`), `Button` with `Spinner` while pending, result shown inline (`FieldError` for errors, a status message on success). A visually hidden honeypot field (`company_url_hp`) that humans never fill.
 - Server action `joinBeta(formData)` in the app (server-only):
   1. If the honeypot is filled: return success silently, store nothing.
   2. **Validate email** with a shared zod schema (same schema used for client-side feedback; server is authoritative): trim, lowercase, max 254 chars, valid email format, reject empty. Invalid input returns a field error message without hitting the database.
@@ -78,7 +78,7 @@ Table `public.beta_signups`: `id uuid pk default gen_random_uuid()`, `email text
 ### Configuration
 
 - Env vars, server-only (never `NEXT_PUBLIC_`): `SUPABASE_URL`, `SUPABASE_SECRET_KEY`. Add `.env.example`; real values in `.env.local` (git-ignored) and the deploy environment. Document in README; Docker run needs `--env-file`.
-- Dependencies: `@supabase/supabase-js`, `zod`, plus shadcn components: `input`, `field`, `card`, `badge`, `separator`, `accordion`, `toast` (Base UI), `spinner`. Pin versions; lockfile committed.
+- Dependencies: `@supabase/supabase-js`, `zod`, plus shadcn components: `input`, `field`, `card`, `badge`, `separator`, `accordion`, `spinner`. Pin versions; lockfile committed.
 
 ### Testing
 

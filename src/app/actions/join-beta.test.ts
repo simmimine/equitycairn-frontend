@@ -8,6 +8,8 @@ vi.mock("@/lib/supabase/server", () => ({
   getSupabaseAdmin: () => getSupabaseAdmin(),
 }));
 
+import { HONEYPOT_FIELD } from "@/lib/signup/honeypot";
+
 import { joinBeta } from "./join-beta";
 
 function form(fields: Record<string, string>) {
@@ -62,7 +64,7 @@ describe("joinBeta", () => {
   it("silently succeeds when the honeypot is filled", async () => {
     const result = await joinBeta(
       null,
-      form({ email: "ann@example.com", company_url_hp: "http://spam" }),
+      form({ email: "ann@example.com", [HONEYPOT_FIELD]: "http://spam" }),
     );
     expect(result).toEqual({ ok: true });
     expect(getSupabaseAdmin).not.toHaveBeenCalled();

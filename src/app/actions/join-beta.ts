@@ -1,5 +1,6 @@
 "use server";
 
+import { HONEYPOT_FIELD } from "@/lib/signup/honeypot";
 import { parseEmail } from "@/lib/signup/email";
 import type { JoinBetaResult } from "@/lib/signup/types";
 import { getSupabaseAdmin } from "@/lib/supabase/server";
@@ -10,8 +11,8 @@ export async function joinBeta(
   _prev: JoinBetaResult | null,
   formData: FormData,
 ): Promise<JoinBetaResult> {
-  // Honeypot: bots fill the hidden "company_url_hp" field; pretend success.
-  const honeypot = formData.get("company_url_hp");
+  // Honeypot: bots fill the hidden honeypot field; pretend success.
+  const honeypot = formData.get(HONEYPOT_FIELD);
   if (typeof honeypot === "string" && honeypot !== "") {
     return { ok: true };
   }

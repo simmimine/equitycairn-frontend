@@ -13,6 +13,7 @@ import {
 } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { Spinner } from "@/components/ui/spinner";
+import { HONEYPOT_FIELD } from "@/lib/signup/honeypot";
 import { parseEmail } from "@/lib/signup/email";
 import type { JoinBetaResult } from "@/lib/signup/types";
 
@@ -42,6 +43,7 @@ export function SignupForm({ id = "email" }: { id?: string }) {
       : null;
   const error = clientError ?? serverError;
   const invalid = error !== null;
+  const showSuccess = !invalid && current?.ok === true;
   const errorId = `${id}-error`;
   const descriptionId = `${id}-description`;
 
@@ -88,8 +90,11 @@ export function SignupForm({ id = "email" }: { id?: string }) {
             </Button>
           </div>
           {invalid && <FieldError id={errorId}>{error}</FieldError>}
-          <p role="status" className="text-sm text-primary empty:hidden">
-            {!invalid && current?.ok ? "You're on the list" : null}
+          <p
+            role="status"
+            className={showSuccess ? "text-sm text-primary" : "sr-only"}
+          >
+            {showSuccess ? "You're on the list" : null}
           </p>
           <FieldDescription id={descriptionId}>
             No spam. We&apos;ll only email you about the beta.
@@ -101,7 +106,7 @@ export function SignupForm({ id = "email" }: { id?: string }) {
         >
           <input
             type="text"
-            name="company_url_hp"
+            name={HONEYPOT_FIELD}
             tabIndex={-1}
             autoComplete="off"
           />

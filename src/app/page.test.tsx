@@ -40,6 +40,8 @@ describe("Home", () => {
 
   it("makes no real-time or all-news claims", () => {
     const { container } = render(<Home />);
-    expect(container.textContent).not.toMatch(/real-time|all news/i);
+    expect(container.textContent).not.toMatch(
+      /real[- ]?time|all[- ]news|all the news|instant|live (news|prices)/i,
+    );
   });
 });

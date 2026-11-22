@@ -1,4 +1,4 @@
-import { buttonVariants } from "@/components/ui/button";
+import { JoinBetaLink } from "@/components/landing/join-beta-link";
 
 export function SiteHeader() {
   return (
@@ -7,9 +7,7 @@ export function SiteHeader() {
         <a href="#top" className="text-base font-semibold tracking-tight">
           EquityCairn
         </a>
-        <a href="#join" className={buttonVariants()}>
-          Join the beta
-        </a>
+        <JoinBetaLink />
       </div>
     </header>
   );

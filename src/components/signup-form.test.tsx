@@ -2,6 +2,7 @@ import { cleanup, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
+import { HONEYPOT_FIELD } from "@/lib/signup/honeypot";
 import type { JoinBetaResult } from "@/lib/signup/types";
 
 const joinBeta = vi.hoisted(() => vi.fn());
@@ -44,6 +45,7 @@ describe("SignupForm", () => {
     expect(prev).toBeNull();
     expect(formData).toBeInstanceOf(FormData);
     expect(formData.get("email")).toBe("a@b.co");
+    expect(formData.get(HONEYPOT_FIELD)).toBe("");
   });
 
   it("disables the button and shows a spinner while pending", async () => {
@@ -62,6 +64,9 @@ describe("SignupForm", () => {
     expect(button).toHaveAttribute("aria-busy", "true");
     expect(button).toHaveAccessibleName("Join the beta");
     expect(screen.getByLabelText(/email/i)).toHaveAttribute("readonly");
+    const spinner = button.querySelector('[data-slot="spinner"]');
+    expect(spinner).not.toBeNull();
+    expect(spinner).toHaveAttribute("aria-hidden", "true");
 
     resolve({ ok: true });
     await waitFor(() => expect(button).toBeEnabled());
@@ -130,7 +135,7 @@ describe("SignupForm", () => {
   it("hides the honeypot from assistive tech and keyboard", () => {
     const { container } = setup();
     const honeypot = container.querySelector<HTMLInputElement>(
-      'input[name="company_url_hp"]',
+      `input[name="${HONEYPOT_FIELD}"]`,
     );
     expect(honeypot).not.toBeNull();
     expect(honeypot).toHaveAttribute("tabindex", "-1");
@@ -138,7 +143,7 @@ describe("SignupForm", () => {
     expect(screen.queryByLabelText(/website/i)).toBeNull();
   });
 
-  it("keeps the input enabled while pending so focus is not lost", async () => {
+  it("makes the input readOnly, not disabled, while pending so focus is not lost", async () => {
     let resolve!: (result: JoinBetaResult) => void;
     joinBeta.mockReturnValue(
       new Promise<JoinBetaResult>((r) => {
@@ -150,6 +155,7 @@ describe("SignupForm", () => {
     await user.type(input, "a@b.co");
     await user.keyboard("{Enter}");
     await waitFor(() => expect(screen.getByRole("button")).toBeDisabled());
+    expect(input).toHaveAttribute("readonly");
     expect(input).not.toBeDisabled();
     expect(input).toHaveFocus();
 
@@ -162,10 +168,14 @@ describe("SignupForm", () => {
     const { user } = setup();
     const status = screen.getByRole("status");
     expect(status).toBeEmptyDOMElement();
+    // Must stay in the accessibility tree (not display:none) so announcements work.
+    expect(status.className).not.toMatch(/(^|\s)(empty:)?hidden(\s|$)/);
+    expect(status).toHaveClass("sr-only");
     await user.type(screen.getByLabelText(/email/i), "a@b.co");
     await user.click(screen.getByRole("button"));
     await screen.findByText(/you're on the list/i);
     expect(screen.getByRole("status")).toBe(status);
+    expect(status).not.toHaveClass("sr-only");
   });
 
   it("clears stale server errors and success messages on edit", async () => {
