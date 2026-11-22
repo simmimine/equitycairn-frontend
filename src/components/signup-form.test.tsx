@@ -90,6 +90,41 @@ describe("SignupForm", () => {
     ).toBeInTheDocument();
   });
 
+  it("keeps the typed email after a server error", async () => {
+    joinBeta.mockResolvedValue({
+      ok: false,
+      error: "server_error",
+    } satisfies JoinBetaResult);
+    const { user } = setup();
+    const input = screen.getByLabelText(/email/i);
+    await user.type(input, "a@b.co");
+    await user.click(screen.getByRole("button"));
+
+    await screen.findByText("Something went wrong, please try again");
+    expect(input).toHaveValue("a@b.co");
+  });
+
+  it("calls the action once when submitted twice while pending", async () => {
+    let resolve!: (result: JoinBetaResult) => void;
+    joinBeta.mockReturnValue(
+      new Promise<JoinBetaResult>((r) => {
+        resolve = r;
+      }),
+    );
+    const { user } = setup();
+    await user.type(screen.getByLabelText(/email/i), "a@b.co");
+    const button = screen.getByRole("button");
+    await user.click(button);
+    await waitFor(() => expect(button).toBeDisabled());
+    await user.click(button);
+    await user.keyboard("{Enter}");
+
+    expect(joinBeta).toHaveBeenCalledTimes(1);
+
+    resolve({ ok: true });
+    await waitFor(() => expect(button).toBeEnabled());
+  });
+
   it("hides the honeypot from assistive tech and keyboard", () => {
     const { container } = setup();
     const honeypot = container.querySelector<HTMLInputElement>(

@@ -14,12 +14,21 @@ import {
 import { Input } from "@/components/ui/input";
 import { Spinner } from "@/components/ui/spinner";
 import { parseEmail } from "@/lib/signup/email";
+import type { JoinBetaResult } from "@/lib/signup/types";
 
 const INVALID_EMAIL_MESSAGE = "Enter a valid email address";
 const SERVER_ERROR_MESSAGE = "Something went wrong, please try again";
 
 export function SignupForm({ id = "email" }: { id?: string }) {
-  const [state, formAction, pending] = useActionState(joinBeta, null);
+  const [email, setEmail] = useState("");
+  const [state, formAction, pending] = useActionState(
+    async (prev: JoinBetaResult | null, formData: FormData) => {
+      const result = await joinBeta(prev, formData);
+      if (result.ok) setEmail("");
+      return result;
+    },
+    null,
+  );
   const [clientError, setClientError] = useState<string | null>(null);
 
   const serverError =
@@ -61,7 +70,11 @@ export function SignupForm({ id = "email" }: { id?: string }) {
               disabled={pending}
               aria-invalid={invalid || undefined}
               aria-describedby={invalid ? errorId : descriptionId}
-              onChange={() => setClientError(null)}
+              value={email}
+              onChange={(event) => {
+                setEmail(event.target.value);
+                setClientError(null);
+              }}
             />
             <Button type="submit" disabled={pending}>
               {pending && <Spinner data-icon="inline-start" />}
