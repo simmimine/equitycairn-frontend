@@ -20,23 +20,24 @@ type SampleStory = {
 // Fictional companies and headlines, for illustration only.
 const SAMPLE_STORIES: SampleStory[] = [
   {
-    tickers: ["NWND"],
-    headline: "Northwind Industries files its quarterly report",
+    tickers: ["DEMO-A"],
+    headline: "Alderbrook Industries files its quarterly report",
     sources: 6,
   },
   {
-    tickers: ["HLXR", "CTSO"],
-    headline: "Helix Robotics and Contoso Air announce a supply agreement",
+    tickers: ["DEMO-B", "DEMO-C"],
+    headline:
+      "Brightwater Robotics and Cobalt Harbor Air announce a supply agreement",
     sources: 4,
   },
   {
-    tickers: ["WDGR"],
-    headline: "Woodgrove Bank names a new chief financial officer",
+    tickers: ["DEMO-D"],
+    headline: "Driftmoor Bank names a new chief financial officer",
     sources: 5,
   },
   {
-    tickers: ["FBRK"],
-    headline: "Fabrikam Energy sets the date for its annual meeting",
+    tickers: ["DEMO-E"],
+    headline: "Eastfell Energy sets the date for its annual meeting",
     sources: 3,
   },
 ];

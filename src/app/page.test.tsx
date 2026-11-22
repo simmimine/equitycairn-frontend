@@ -21,7 +21,11 @@ describe("Home", () => {
 
   it("offers the beta sign-up form twice", () => {
     render(<Home />);
-    expect(screen.getAllByRole("textbox", { name: "Email" })).toHaveLength(2);
+    const inputs = screen.getAllByRole("textbox", { name: "Email" });
+    expect(inputs.map((input) => input.id)).toEqual([
+      "hero-email",
+      "cta-email",
+    ]);
   });
 
   it("labels the feed preview as a sample", () => {

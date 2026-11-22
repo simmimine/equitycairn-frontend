@@ -29,7 +29,7 @@ const QUESTIONS = [
   {
     question: "What happens to my email?",
     answer:
-      "We use it only to contact you about the EquityCairn beta. We don't sell it, and you can ask us to delete it at any time.",
+      "We only use your email to contact you about the beta, and we don't share it.",
   },
 ];
 
