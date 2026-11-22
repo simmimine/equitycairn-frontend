@@ -10,3 +10,8 @@ Dockerfile
 .dockerignore
 *.md
 .env*
+.trail
+.claude
+opencode.json
+test-results
+*.tsbuildinfo
