@@ -5,7 +5,7 @@ EquityCairn web frontend: Next.js (App Router) + Tailwind CSS + shadcn/ui, on th
 ## Requirements
 
 - Node 26.13.1 (see `.nvmrc`)
-- pnpm
+- pnpm 12 (`packageManager` is pinned in `package.json`)
 
 ## Scripts
 
@@ -16,6 +16,8 @@ EquityCairn web frontend: Next.js (App Router) + Tailwind CSS + shadcn/ui, on th
 | `pnpm lint` / `pnpm typecheck` / `pnpm format:check` | Static checks                                 |
 | `pnpm test`                                          | Vitest unit/component tests                   |
 | `pnpm test:e2e`                                      | Playwright tests (starts dev server on :3100) |
+
+First-time setup: `pnpm install`, `pnpm exec playwright install chromium`, and `cp .env.example .env.local`.
 
 Add shadcn components with `pnpm dlx shadcn@latest add <component>`.
 

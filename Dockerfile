@@ -4,7 +4,8 @@ ARG NODE_VERSION=26.13.1
 
 FROM node:${NODE_VERSION}-slim AS base
 ENV PNPM_HOME=/pnpm PATH=/pnpm:$PATH NEXT_TELEMETRY_DISABLED=1
-RUN corepack enable
+# Node 25+ no longer bundles corepack; install the pinned pnpm directly.
+RUN npm install -g pnpm@12.21.0
 WORKDIR /app
 
 FROM base AS deps
