@@ -128,4 +128,32 @@
   html {
     @apply font-sans;
   }
+  /* Tailwind v4 preflight resets buttons to cursor:default; restore the
+     pointer on everything clickable (incl. shadcn/Base UI triggers). */
+  button:not(:disabled),
+  [role="button"]:not([aria-disabled="true"]),
+  [role="tab"],
+  [role="menuitem"],
+  [role="option"],
+  [role="switch"],
+  [role="checkbox"],
+  [role="radio"],
+  summary,
+  select:not(:disabled),
+  a[href],
+  label[for],
+  input:is(
+      [type="button"],
+      [type="submit"],
+      [type="reset"],
+      [type="checkbox"],
+      [type="radio"],
+      [type="file"]
+    ):not(:disabled) {
+    cursor: pointer;
+  }
+  :disabled,
+  [aria-disabled="true"] {
+    cursor: not-allowed;
+  }
 }
