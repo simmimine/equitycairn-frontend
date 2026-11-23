@@ -132,4 +132,12 @@ describe("StockPicker", () => {
       `You have ${many.length} saved`,
     );
   });
+
+  it("keeps the typed ticker when the list is full and the add is refused", async () => {
+    const full = POPULAR_COMPANIES.slice(0, MAX_PICKS).map((c) => c.ticker);
+    const { user, onToggle } = setup(full);
+    await user.type(screen.getByRole("searchbox"), "tsla{Enter}");
+    expect(onToggle).toHaveBeenCalledWith("TSLA");
+    expect(screen.getByRole("searchbox")).toHaveValue("tsla");
+  });
 });

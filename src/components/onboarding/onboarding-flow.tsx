@@ -1,7 +1,8 @@
 "use client";
 
 import { ArrowLeftIcon, ArrowRightIcon, TrendingUpIcon } from "lucide-react";
-import { useState, useTransition, type ReactNode } from "react";
+import { useRouter } from "next/navigation";
+import { useRef, useState, useTransition, type ReactNode } from "react";
 
 import {
   finishOnboardingAction,
@@ -25,7 +26,11 @@ import {
 } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { Spinner } from "@/components/ui/spinner";
-import { parseStored, toggleTicker } from "@/lib/onboarding/companies";
+import {
+  MAX_PICKS,
+  parseStored,
+  toggleTicker,
+} from "@/lib/onboarding/companies";
 
 export type OnboardingStep = "name" | "about" | "welcome" | "watchlist";
 
@@ -84,7 +89,38 @@ function errorText(
     return "Tickers are one to six letters, separated by spaces or commas.";
   }
   if (result.error === "too_many") return "You can follow up to 50 companies.";
+  if (result.error === "already_onboarded") {
+    return "You've already finished setting up.";
+  }
   return "Something went wrong, please try again.";
+}
+
+/** Next's redirect() rejects with a control-flow error that must reach the router. */
+function isRedirect(err: unknown): boolean {
+  const digest = (err as { digest?: unknown } | null)?.digest;
+  return typeof digest === "string" && digest.startsWith("NEXT_REDIRECT");
+}
+
+function SkipLink({
+  label,
+  onClick,
+  disabled,
+}: {
+  label: string;
+  onClick: () => void;
+  disabled: boolean;
+}) {
+  return (
+    <Button
+      type="button"
+      variant="link"
+      onClick={onClick}
+      disabled={disabled}
+      className="text-primary"
+    >
+      {label}
+    </Button>
+  );
 }
 
 function StepHeading({
@@ -131,6 +167,9 @@ export function OnboardingFlow({
   const [limited, setLimited] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
+  const router = useRouter();
+  // `pending` only flips on the next render, so a fast double click would slip past it.
+  const inFlight = useRef(false);
 
   const index = STEPS.indexOf(step);
   const go = (next: OnboardingStep) => {
@@ -139,32 +178,54 @@ export function OnboardingFlow({
   };
   const back = () => go(STEPS[Math.max(0, index - 1)]);
 
+  /** Runs one save/finish chain once at a time and turns every failure into a message. */
+  function run(
+    step: OnboardingStep,
+    work: () => Promise<OnboardingResult | null>,
+  ) {
+    if (pending || inFlight.current) return;
+    inFlight.current = true;
+    setError(null);
+    startTransition(async () => {
+      try {
+        const result = await work();
+        if (result && !result.ok) {
+          if (result.error === "already_onboarded") router.replace("/feed");
+          setError(errorText(step, result));
+        }
+      } catch (err) {
+        if (isRedirect(err)) throw err;
+        setError(errorText(step, { ok: false, error: "server_error" }));
+      } finally {
+        inFlight.current = false;
+      }
+    });
+  }
+
   function submit(
     action: () => Promise<OnboardingResult>,
     next: OnboardingStep,
   ) {
-    if (pending) return;
-    setError(null);
-    startTransition(async () => {
+    run(step, async () => {
       const result = await action();
-      if (!result.ok) setError(errorText(step, result));
-      else setStep(next);
+      if (result.ok) setStep(next);
+      return result;
     });
   }
 
   function finish(save: boolean) {
-    if (pending) return;
-    setError(null);
-    startTransition(async () => {
+    if (save && picks.length > MAX_PICKS) {
+      setError(
+        `You can follow up to ${MAX_PICKS} companies. Remove ${picks.length - MAX_PICKS} to continue.`,
+      );
+      return;
+    }
+    run("watchlist", async () => {
       if (save) {
         const saved = await actions.saveWatchlist(picks.join(" "));
-        if (!saved.ok) {
-          setError(errorText("watchlist", saved));
-          return;
-        }
+        if (!saved.ok) return saved;
       }
-      const done = await actions.finish();
-      if (!done.ok) setError(errorText("watchlist", done));
+      return actions.finish();
     });
   }
 
@@ -213,18 +274,6 @@ export function OnboardingFlow({
       {arrow}
     </Button>
   );
-  const skipLink = (label: string, onClick: () => void) => (
-    <Button
-      type="button"
-      variant="link"
-      onClick={onClick}
-      disabled={pending}
-      className={linkClass}
-    >
-      {label}
-    </Button>
-  );
-
   let main: ReactNode;
   let info: ReactNode;
   let actions_: ReactNode;
@@ -339,11 +388,15 @@ export function OnboardingFlow({
     actions_ = (
       <>
         {submitButton("Continue")}
-        {skipLink("Skip for now", () => {
-          setRole("");
-          setExperience("");
-          submit(() => actions.saveAbout("", ""), "welcome");
-        })}
+        <SkipLink
+          label="Skip for now"
+          disabled={pending}
+          onClick={() => {
+            setRole("");
+            setExperience("");
+            submit(() => actions.saveAbout("", ""), "welcome");
+          }}
+        />
       </>
     );
   } else if (step === "welcome") {
@@ -441,7 +494,11 @@ export function OnboardingFlow({
     actions_ = (
       <>
         {submitButton("Continue")}
-        {skipLink("I’ll do this later", () => finish(false))}
+        <SkipLink
+          label="I’ll do this later"
+          disabled={pending}
+          onClick={() => finish(false)}
+        />
       </>
     );
   }

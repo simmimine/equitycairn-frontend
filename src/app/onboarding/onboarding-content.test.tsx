@@ -17,7 +17,10 @@ vi.mock("@/app/actions/onboarding", () => ({
   saveWatchlistAction: vi.fn(),
   finishOnboardingAction: vi.fn(),
 }));
-vi.mock("next/navigation", () => ({ redirect: (u: string) => redirect(u) }));
+vi.mock("next/navigation", () => ({
+  redirect: (u: string) => redirect(u),
+  useRouter: () => ({ replace: vi.fn() }),
+}));
 
 import { OnboardingContent } from "./onboarding-content";
 

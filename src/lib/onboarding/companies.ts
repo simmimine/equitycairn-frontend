@@ -116,8 +116,9 @@ export function tickerCandidate(
   const t = query.trim().toUpperCase();
   if (!TICKER_LIKE.test(t)) return null;
   if (selected.includes(t)) return null;
-  // Ordinary words ("apple") match a company card; adding them as tickers would save junk.
-  if (filterCompanies(t, "All").length > 0) return null;
+  // A word that names a company ("apple", "micro") is a search, not a ticker, and adding it
+  // would save junk. Short queries ("F", "GE") are too ambiguous to rule out: real tickers.
+  if (t.length >= 3 && filterCompanies(t, "All").length > 0) return null;
   return t;
 }
 

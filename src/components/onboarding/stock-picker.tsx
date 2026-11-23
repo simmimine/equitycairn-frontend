@@ -42,6 +42,12 @@ export function StockPicker({
   const [query, setQuery] = useState("");
   const [category, setCategory] = useState<Category>("All");
 
+  function addCandidate(ticker: string) {
+    onToggle(ticker);
+    // When the list is full the add is refused: keep the text so it isn't silently lost.
+    if (selected.length < MAX_PICKS) setQuery("");
+  }
+
   const companies = filterCompanies(query, category);
   const candidate =
     category === "All" ? tickerCandidate(query, selected) : null;
@@ -74,10 +80,7 @@ export function StockPicker({
             // (that would finish onboarding); use it to add the offered ticker.
             if (e.key !== "Enter") return;
             e.preventDefault();
-            if (candidate) {
-              onToggle(candidate);
-              setQuery("");
-            }
+            if (candidate) addCandidate(candidate);
           }}
         />
       </InputGroup>
@@ -192,10 +195,7 @@ export function StockPicker({
           type="button"
           variant="outline"
           className="h-11 justify-start rounded-xl"
-          onClick={() => {
-            onToggle(candidate);
-            setQuery("");
-          }}
+          onClick={() => addCandidate(candidate)}
         >
           <PlusIcon data-icon="inline-start" aria-hidden="true" />
           Add “{candidate}” to your watchlist

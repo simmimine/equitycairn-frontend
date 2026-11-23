@@ -62,10 +62,16 @@ describe("tickerCandidate", () => {
     expect(tickerCandidate(" brk.b ", [])).toBe("BRK.B");
   });
 
+  it("still offers short tickers that merely appear inside company names", () => {
+    expect(tickerCandidate("f", [])).toBe("F");
+    expect(tickerCandidate("ge", [])).toBe("GE");
+  });
+
   it("offers nothing for popular tickers, selected tickers or non-tickers", () => {
     expect(tickerCandidate("aapl", [])).toBeNull();
     expect(tickerCandidate("apple", [])).toBeNull();
     expect(tickerCandidate("micro", [])).toBeNull();
+    expect(tickerCandidate("msft", [])).toBeNull();
     expect(tickerCandidate("zzzz", ["ZZZZ"])).toBeNull();
     expect(tickerCandidate("abcdefg", [])).toBeNull();
     expect(tickerCandidate("ab1", [])).toBeNull();

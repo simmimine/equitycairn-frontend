@@ -13,6 +13,11 @@ vi.mock("@/app/actions/onboarding", () => ({
   finishOnboardingAction: (...a: unknown[]) => finishOnboardingAction(...a),
 }));
 
+const routerReplace = vi.fn();
+vi.mock("next/navigation", () => ({
+  useRouter: () => ({ replace: routerReplace }),
+}));
+
 import { OnboardingFlow } from "./onboarding-flow";
 
 const EMPTY = {
@@ -25,6 +30,7 @@ const EMPTY = {
 const NAMED = { ...EMPTY, firstName: "Ann", lastName: "Lee" };
 
 beforeEach(() => {
+  routerReplace.mockReset();
   for (const m of [
     saveNameAction,
     saveAboutAction,
@@ -296,5 +302,69 @@ describe("OnboardingFlow · injected actions", () => {
     await user.click(cont());
     expect(saveName).toHaveBeenCalledWith("Ann", "Lee");
     expect(saveNameAction).not.toHaveBeenCalled();
+  });
+});
+
+describe("OnboardingFlow · failures", () => {
+  it("shows a message instead of crashing when an action rejects", async () => {
+    saveNameAction.mockRejectedValue(new Error("network down"));
+    const user = userEvent.setup();
+    render(<OnboardingFlow initial={NAMED} startStep="name" />);
+    await user.click(cont());
+    expect(
+      await screen.findByText(/something went wrong/i),
+    ).toBeInTheDocument();
+    // Still usable: the button is enabled again and retry works.
+    saveNameAction.mockResolvedValue({ ok: true });
+    await user.click(cont());
+    expect(
+      await screen.findByRole("heading", { name: /about you/i }),
+    ).toBeInTheDocument();
+  });
+
+  it("sends the user to the feed when onboarding was finished in another tab", async () => {
+    saveNameAction.mockResolvedValue({ ok: false, error: "already_onboarded" });
+    const user = userEvent.setup();
+    render(<OnboardingFlow initial={NAMED} startStep="name" />);
+    await user.click(cont());
+    expect(routerReplace).toHaveBeenCalledWith("/feed");
+    expect(await screen.findByText(/already finished/i)).toBeInTheDocument();
+  });
+
+  it("blocks continuing with more than 10 saved companies", async () => {
+    const twelve = "AAPL NVDA MSFT V JNJ KO GOOGL AMZN JPM PFE MCD MA";
+    const user = userEvent.setup();
+    render(
+      <OnboardingFlow
+        initial={{ ...NAMED, tickers: twelve }}
+        startStep="watchlist"
+      />,
+    );
+    await user.click(cont());
+    expect(
+      await screen.findByText(/remove 2 to continue/i),
+    ).toBeInTheDocument();
+    expect(saveWatchlistAction).not.toHaveBeenCalled();
+    await user.click(screen.getByRole("button", { name: "Remove AAPL" }));
+    await user.click(screen.getByRole("button", { name: "Remove NVDA" }));
+    await user.click(cont());
+    expect(saveWatchlistAction).toHaveBeenCalled();
+  });
+
+  it("Clear removes a single answer and keeps the other", async () => {
+    const user = userEvent.setup();
+    render(
+      <OnboardingFlow
+        initial={{ ...NAMED, role: "other", experience: "beginner" }}
+        startStep="about"
+      />,
+    );
+    await user.click(
+      screen.getByRole("button", {
+        name: "Clear answer: How would you describe your experience?",
+      }),
+    );
+    await user.click(cont());
+    expect(saveAboutAction).toHaveBeenCalledWith("other", "");
   });
 });

@@ -432,3 +432,43 @@ test.describe("keyboard", () => {
     ).toBeVisible();
   });
 });
+
+test.describe("edge cases", () => {
+  test("a short ticker can be added even though it appears inside company names", async ({
+    page,
+  }) => {
+    await open(page, "?step=watchlist");
+    await page.getByRole("searchbox", { name: "Search companies" }).fill("f");
+    await page
+      .getByRole("button", { name: "Add “F” to your watchlist" })
+      .click();
+    await expect(page.getByText("1 selected")).toBeVisible();
+  });
+
+  test("an over-limit saved list blocks Continue with an explanation", async ({
+    page,
+  }) => {
+    await open(
+      page,
+      "?step=watchlist&tickers=AAPL,NVDA,MSFT,V,JNJ,KO,GOOGL,AMZN,JPM,PFE,MCD,MA",
+    );
+    await next(page).click();
+    await expect(page.getByText(/remove 2 to continue/i)).toBeVisible();
+    expect(await calls(page)).toEqual([]);
+  });
+
+  test("Clear drops one answer and keeps the other", async ({ page }) => {
+    await open(page, "?step=about");
+    await choose(page, "Other");
+    await choose(page, "Beginner");
+    await page
+      .getByRole("button", {
+        name: "Clear answer: How would you describe your experience?",
+      })
+      .click();
+    await next(page).click();
+    expect(await calls(page)).toEqual([
+      { action: "saveAbout", args: ["other", ""] },
+    ]);
+  });
+});

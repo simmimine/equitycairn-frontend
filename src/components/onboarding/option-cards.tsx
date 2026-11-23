@@ -1,5 +1,6 @@
 import { useId } from "react";
 
+import { Button } from "@/components/ui/button";
 import {
   Field,
   FieldContent,
@@ -29,9 +30,22 @@ export function OptionCards({
   const legendId = useId();
   return (
     <div className="flex flex-col gap-3">
-      <p id={legendId} className="text-sm font-semibold">
-        {legend}
-      </p>
+      <div className="flex items-center justify-between gap-3">
+        <p id={legendId} className="text-sm font-semibold">
+          {legend}
+        </p>
+        {value && (
+          <Button
+            type="button"
+            variant="link"
+            size="xs"
+            aria-label={`Clear answer: ${legend}`}
+            onClick={() => onValueChange("")}
+          >
+            Clear
+          </Button>
+        )}
+      </div>
       <RadioGroup
         aria-labelledby={legendId}
         value={value}
