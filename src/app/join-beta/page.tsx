@@ -15,7 +15,15 @@ export default function JoinBetaPage({
   searchParams: Promise<{ token?: string | string[] }>;
 }) {
   return (
-    <Suspense fallback={<JoinBetaShell>{null}</JoinBetaShell>}>
+    <Suspense
+      fallback={
+        <JoinBetaShell>
+          <p role="status" className="sr-only">
+            Loading…
+          </p>
+        </JoinBetaShell>
+      }
+    >
       <JoinBetaContent searchParams={searchParams} />
     </Suspense>
   );

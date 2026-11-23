@@ -15,6 +15,15 @@ vi.mock("@/lib/signup/store", () => ({
 vi.mock("@/lib/email/verification-email", () => ({
   sendVerificationEmail: (...a: unknown[]) => sendVerificationEmail(...a),
 }));
+const afterCallbacks: (() => unknown)[] = [];
+vi.mock("next/server", () => ({
+  after: (cb: () => unknown) => {
+    afterCallbacks.push(cb);
+  },
+}));
+async function runAfter() {
+  for (const cb of afterCallbacks.splice(0)) await cb();
+}
 vi.mock("next/headers", () => ({ headers: () => headersFn() }));
 vi.mock("next/navigation", () => ({
   redirect: (url: string) => redirect(url),
@@ -39,6 +48,7 @@ function captureConsole() {
 describe("joinBeta", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    afterCallbacks.length = 0;
     headersFn.mockResolvedValue(new Headers({ "x-forwarded-for": "1.2.3.4" }));
     checkSignupRateLimit.mockResolvedValue({ allowed: true });
     registerSignup.mockResolvedValue({
@@ -87,6 +97,8 @@ describe("joinBeta", () => {
       joinBeta(null, form({ email: " Ann@Example.com " })),
     ).rejects.toThrow("NEXT_REDIRECT:/join-beta?token=manage-raw");
     expect(registerSignup).toHaveBeenCalledWith("ann@example.com");
+    expect(sendVerificationEmail).not.toHaveBeenCalled();
+    await runAfter();
     expect(sendVerificationEmail).toHaveBeenCalledWith(
       "ann@example.com",
       "verify-raw",
@@ -123,6 +135,8 @@ describe("joinBeta", () => {
     await expect(
       joinBeta(null, form({ email: "ann@example.com" })),
     ).rejects.toThrow("NEXT_REDIRECT:/join-beta?token=manage-existing");
+    expect(afterCallbacks).toHaveLength(0);
+    await runAfter();
     expect(sendVerificationEmail).not.toHaveBeenCalled();
 
     registerSignup.mockResolvedValue({
@@ -132,6 +146,7 @@ describe("joinBeta", () => {
     await expect(
       joinBeta(null, form({ email: "new@example.com" })),
     ).rejects.toThrow("NEXT_REDIRECT:/join-beta?token=manage-new");
+    await runAfter();
     expect(sendVerificationEmail).toHaveBeenCalledTimes(1);
     // Neither path returns a distinguishing visible result (both redirect).
     expect(redirect).toHaveBeenCalledTimes(2);
@@ -142,6 +157,8 @@ describe("joinBeta", () => {
     await expect(
       joinBeta(null, form({ email: "ann@example.com" })),
     ).rejects.toThrow("NEXT_REDIRECT:/join-beta?token=manage-raw");
+    await expect(runAfter()).resolves.toBeUndefined();
+    expect(sendVerificationEmail).toHaveBeenCalledTimes(1);
   });
 
   it("still redirects when the email send throws, without logging secrets", async () => {
@@ -150,6 +167,8 @@ describe("joinBeta", () => {
     await expect(
       joinBeta(null, form({ email: "ann@example.com" })),
     ).rejects.toThrow("NEXT_REDIRECT:/join-beta?token=manage-raw");
+    await expect(runAfter()).resolves.toBeUndefined();
+    expect(sendVerificationEmail).toHaveBeenCalledTimes(1);
     for (const spy of spies) {
       const logged = JSON.stringify(spy.mock.calls);
       expect(logged).not.toContain("ann@example.com");

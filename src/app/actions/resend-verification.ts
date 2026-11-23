@@ -1,17 +1,34 @@
 "use server";
 
+import { headers } from "next/headers";
+import { after } from "next/server";
+
 import { sendVerificationEmail } from "@/lib/email/verification-email";
 import { COOLDOWN_SECONDS } from "@/lib/signup/constants";
-import { issueResend } from "@/lib/signup/store";
+import { getClientKey } from "@/lib/signup/client-key";
+import { parseTokenParam } from "@/lib/signup/search-token";
+import { checkSignupRateLimit, issueResend } from "@/lib/signup/store";
 import type { ResendResult } from "@/lib/signup/types";
 
 export async function resendVerification(token: string): Promise<ResendResult> {
-  if (typeof token !== "string" || token === "") {
+  const manageToken = parseTokenParam(token);
+  if (!manageToken) {
     return { ok: false, error: "invalid_token" };
   }
 
   try {
-    const result = await issueResend(token);
+    // Per-IP limit, in its own keyspace so it never shares the sign-up budget.
+    const key = `resend:${getClientKey(await headers())}`;
+    const limit = await checkSignupRateLimit(key);
+    if (!limit.allowed) {
+      return {
+        ok: false,
+        error: "cooldown",
+        retryAfterSeconds: limit.retryAfterSeconds,
+      };
+    }
+
+    const result = await issueResend(manageToken);
     if (result.status === "invalid") {
       return { ok: false, error: "invalid_token" };
     }
@@ -23,11 +40,14 @@ export async function resendVerification(token: string): Promise<ResendResult> {
       };
     }
     if (result.status === "sent") {
-      try {
-        await sendVerificationEmail(result.email, result.verifyToken);
-      } catch {
-        console.error("resendVerification email failed");
-      }
+      const { email, verifyToken } = result;
+      after(async () => {
+        try {
+          await sendVerificationEmail(email, verifyToken);
+        } catch {
+          console.error("resendVerification email failed");
+        }
+      });
     }
     // `sent` and `noop` are indistinguishable to the caller.
     return { ok: true, retryAfterSeconds: COOLDOWN_SECONDS };

@@ -36,6 +36,14 @@ describe("/join-beta", () => {
     expect(element.type).toBe(Suspense);
   });
 
+  it("renders an accessible loading status in the Suspense fallback", () => {
+    const element = JoinBetaPage({ searchParams: Promise.resolve({}) });
+    render(element.props.fallback);
+    const status = screen.getByRole("status");
+    expect(status).toHaveTextContent("Loading…");
+    expect(status).toHaveClass("sr-only");
+  });
+
   it("is not indexable", () => {
     expect(metadata.robots).toEqual({ index: false, follow: false });
   });

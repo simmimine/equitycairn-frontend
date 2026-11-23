@@ -244,6 +244,18 @@ describe("issueResend", () => {
     expect(await issueResend(r.manageToken)).toEqual({ status: "noop" });
   });
 
+  it("uses uuid string row ids (matches the uuid column)", async () => {
+    await registerSignup("ann@example.com");
+    expect(typeof db.rows[0].id).toBe("string");
+  });
+
+  it("fails instead of returning a non-string email", async () => {
+    const r = await registerSignup("ann@example.com");
+    delete db.rows[0].email;
+    advance(COOLDOWN_SECONDS);
+    await expect(issueResend(r.manageToken)).rejects.toThrow();
+  });
+
   it("concurrent resends yield a single sent", async () => {
     const r = await registerSignup("ann@example.com");
     advance(COOLDOWN_SECONDS);

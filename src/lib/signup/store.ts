@@ -59,7 +59,7 @@ export async function checkSignupRateLimit(
  */
 async function issueVerifyToken(
   column: "manage_token_hash" | "id",
-  value: string | number,
+  value: string,
   now: Date,
 ): Promise<{ raw: string; email: string } | null> {
   const { token, fields } = verifyFields(now);
@@ -74,7 +74,11 @@ async function issueVerifyToken(
     .select("id,email");
   if (error) fail("issue verify token", error);
   if (!Array.isArray(data) || data.length !== 1) return null;
-  return { raw: token.raw, email: String(data[0].email) };
+  const email: unknown = data[0].email;
+  if (typeof email !== "string" || email === "") {
+    fail("issue verify token", { message: "row has no email" });
+  }
+  return { raw: token.raw, email };
 }
 
 /**
@@ -84,7 +88,7 @@ async function issueVerifyToken(
  */
 async function bumpCooldown(
   column: "manage_token_hash" | "id",
-  value: string | number,
+  value: string,
   now: Date,
 ): Promise<boolean> {
   const { data, error } = await getSupabaseAdmin()
@@ -126,7 +130,7 @@ export async function registerSignup(
     .maybeSingle();
   if (findError) fail("find existing", findError);
   if (!existing) fail("find existing", { message: "row not found" });
-  const id = (existing as { id: number }).id;
+  const id = (existing as { id: string }).id;
 
   const { data: updated, error: updateError } = await db
     .from(TABLE)

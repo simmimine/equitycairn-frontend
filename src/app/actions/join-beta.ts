@@ -2,6 +2,7 @@
 
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
+import { after } from "next/server";
 
 import { sendVerificationEmail } from "@/lib/email/verification-email";
 import { getClientKey } from "@/lib/signup/client-key";
@@ -40,14 +41,18 @@ export async function joinBeta(
     const registered = await registerSignup(parsed.email);
     manageToken = registered.manageToken;
 
-    // Only send when a token was issued; the outcome never changes the
-    // response, so existing and new addresses look identical.
-    if (registered.verifyToken) {
-      try {
-        await sendVerificationEmail(parsed.email, registered.verifyToken);
-      } catch {
-        console.error("joinBeta verification email failed");
-      }
+    // Only send when a token was issued. The send runs after the response so
+    // it never affects the result or its timing (existing and new addresses
+    // look identical).
+    const { verifyToken } = registered;
+    if (verifyToken) {
+      after(async () => {
+        try {
+          await sendVerificationEmail(parsed.email, verifyToken);
+        } catch {
+          console.error("joinBeta verification email failed");
+        }
+      });
     }
   } catch (err) {
     console.error(

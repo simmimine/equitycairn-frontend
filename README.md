@@ -44,15 +44,17 @@ Locally, copy `.env.example` to `.env.local` and fill them in. In deployment (Cl
 
 ### Database
 
-Sign-ups are stored in `public.beta_signups`, created by `supabase/migrations/20261122231834_create_beta_signups.sql`. `supabase/migrations/20261123183803_email_verification.sql` adds the token, verification and cooldown columns plus `public.signup_rate_limits` and the `check_signup_rate_limit` function. Row Level Security is enabled with no policies for `anon` or `authenticated`, so only the secret key (server side) can read or write them.
+Sign-ups are stored in `public.beta_signups`, created by `supabase/migrations/20261122231834_create_beta_signups.sql`. `supabase/migrations/20261123183816_email_verification.sql` adds the token, verification and cooldown columns plus `public.signup_rate_limits` and the `check_signup_rate_limit` function. Row Level Security is enabled with no policies for `anon` or `authenticated`, so only the secret key (server side) can read or write them.
 
 ### Sign-up and verification flow
 
 1. The form submits to `joinBeta`, which stores the address, emails a verification link and redirects to `/join-beta?token=<manage token>`.
 2. `/join-beta` shows "Check your email" with a re-send button that is disabled until the cooldown ends. The cooldown is read from the server, so a reload does not reset it.
-3. The emailed link opens `/join-beta/verify?token=<verify token>` and marks the address verified. Opening it again reports it as already verified.
+3. The emailed link opens `/join-beta/verify?token=<verify token>` and marks the address verified. Links expire after 48 hours. Reopening the link after verification shows "already verified", but an unverified expired link is reported as invalid.
 
-Tokens are stored only as SHA-256 hashes. Sign-ups are limited to one per minute per client IP, and re-sends to one per minute per address.
+Tokens are stored only as SHA-256 hashes. Sign-ups are limited to one per minute per client IP, and re-sends to one per minute per address and per client IP.
+
+Tokens travel in URL query strings, so they appear in Cloud Run request logs (the app itself never logs them). Verification emails are sent with `after()`, i.e. after the response, so run Cloud Run with CPU always allocated (`--no-cpu-throttling`) or delivery may be delayed.
 
 ## Docker / Cloud Run
 
