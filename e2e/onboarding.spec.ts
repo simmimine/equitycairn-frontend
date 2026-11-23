@@ -75,12 +75,14 @@ test.describe("happy path", () => {
     await next(page).click();
 
     await expect(page.getByText("Onboarding finished")).toBeVisible();
-    expect(await calls(page)).toEqual([
-      { action: "saveName", args: ["Ann", "Lee"] },
-      { action: "saveAbout", args: ["retail_investor", "intermediate"] },
-      { action: "saveWatchlist", args: ["AAPL NVDA"] },
-      { action: "finish", args: [] },
-    ]);
+    await expect
+      .poll(() => calls(page))
+      .toEqual([
+        { action: "saveName", args: ["Ann", "Lee"] },
+        { action: "saveAbout", args: ["retail_investor", "intermediate"] },
+        { action: "saveWatchlist", args: ["AAPL NVDA"] },
+        { action: "finish", args: [] },
+      ]);
   });
 
   test("progress bar advances with each step", async ({ page }) => {
@@ -102,7 +104,7 @@ test.describe("name step", () => {
     await open(page);
     await next(page).click();
     await expect(page.getByLabel("First name")).toBeFocused();
-    expect(await calls(page)).toEqual([]);
+    await expect.poll(() => calls(page)).toEqual([]);
   });
 
   test("shows the server's validation error and stays put", async ({
@@ -140,9 +142,9 @@ test.describe("about step", () => {
     await expect(
       page.getByRole("heading", { level: 1, name: "Welcome to EquityCairn" }),
     ).toBeVisible();
-    expect(await calls(page)).toEqual([
-      { action: "saveAbout", args: ["", ""] },
-    ]);
+    await expect
+      .poll(() => calls(page))
+      .toEqual([{ action: "saveAbout", args: ["", ""] }]);
   });
 
   test("Skip clears answers already chosen", async ({ page }) => {
@@ -164,9 +166,9 @@ test.describe("about step", () => {
     await choose(page, "Financial adviser");
     await expect(page.getByRole("radio", { name: "Other" })).not.toBeChecked();
     await next(page).click();
-    expect(await calls(page)).toEqual([
-      { action: "saveAbout", args: ["financial_adviser", ""] },
-    ]);
+    await expect
+      .poll(() => calls(page))
+      .toEqual([{ action: "saveAbout", args: ["financial_adviser", ""] }]);
   });
 
   test("the cards work from the keyboard", async ({ page }) => {
@@ -256,10 +258,12 @@ test.describe("watchlist step", () => {
     ).toBeChecked();
     await next(page).click();
     await expect(page.getByText("Onboarding finished")).toBeVisible();
-    expect(await calls(page)).toContainEqual({
-      action: "saveWatchlist",
-      args: ["ZZZZ"],
-    });
+    await expect
+      .poll(() => calls(page))
+      .toContainEqual({
+        action: "saveWatchlist",
+        args: ["ZZZZ"],
+      });
   });
 
   test("text that is not a ticker offers no add button", async ({ page }) => {
@@ -417,7 +421,7 @@ test.describe("keyboard", () => {
     await page.keyboard.press("Enter");
     await expect(page.getByText("1 selected")).toBeVisible();
     await expect(page.getByText("Onboarding finished")).toHaveCount(0);
-    expect(await calls(page)).toEqual([]);
+    await expect.poll(() => calls(page)).toEqual([]);
   });
 
   test("radio groups are named for assistive tech", async ({ page }) => {
@@ -454,7 +458,7 @@ test.describe("edge cases", () => {
     );
     await next(page).click();
     await expect(page.getByText(/remove 2 to continue/i)).toBeVisible();
-    expect(await calls(page)).toEqual([]);
+    await expect.poll(() => calls(page)).toEqual([]);
   });
 
   test("Clear drops one answer and keeps the other", async ({ page }) => {
@@ -467,9 +471,9 @@ test.describe("edge cases", () => {
       })
       .click();
     await next(page).click();
-    expect(await calls(page)).toEqual([
-      { action: "saveAbout", args: ["other", ""] },
-    ]);
+    await expect
+      .poll(() => calls(page))
+      .toEqual([{ action: "saveAbout", args: ["other", ""] }]);
   });
 
   test("a company name outside the list is not offered as a ticker", async ({
@@ -489,9 +493,7 @@ test.describe("edge cases", () => {
   }) => {
     await open(page, "?step=watchlist&tickers=ZZZZ");
     await page.getByRole("button", { name: "Finance" }).click();
-    await page
-      .getByRole("checkbox", { name: "ZZZZ (custom ticker)" })
-      .uncheck();
+    await page.getByRole("checkbox", { name: "ZZZZ (custom ticker)" }).click();
     await expect(page.getByText("0 selected")).toBeVisible();
   });
 });
