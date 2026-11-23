@@ -20,4 +20,12 @@ describe("SiteHeader", () => {
     await user.click(link);
     expect(screen.getByLabelText("Email")).toHaveFocus();
   });
+
+  it("links to the login page", () => {
+    render(<SiteHeader />);
+    expect(screen.getByRole("link", { name: "Log in" })).toHaveAttribute(
+      "href",
+      "/login",
+    );
+  });
 });

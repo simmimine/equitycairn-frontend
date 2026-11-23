@@ -56,6 +56,23 @@ Tokens are stored only as SHA-256 hashes. Sign-ups are limited to one per minute
 
 Tokens travel in URL query strings, so they appear in Cloud Run request logs (the app itself never logs them). Verification emails are sent with `after()`, i.e. after the response, so run Cloud Run with CPU always allocated (`--no-cpu-throttling`) or delivery may be delayed.
 
+## Login and accounts
+
+Only verified beta members can create an account (see `docs/superpowers/specs/2026-11-23-beta-login-design.md`).
+
+- New variable: `SUPABASE_PUBLISHABLE_KEY` (server-side only).
+- Apply `supabase/migrations/20261124000000_beta_login.sql`.
+- In the Supabase dashboard (Authentication): **disable "Allow new users to sign up"** (accounts are created only by the server with the secret key) and keep **"Confirm email" on**.
+- The confirmation link asks for the password again before confirming; this prevents someone pre-registering a member's address with a password they know.
+
+### Manual check (needs real keys; the Resend test sender only mails the Resend account's own address)
+
+1. Sign up on the landing page with that address and verify it.
+2. `/login`: enter it, create a password, open the emailed link, enter the same password, finish onboarding, land on `/feed`.
+3. Sign out and back in; you should go straight to `/feed`.
+4. An address that is not on the list, and one that is listed but unverified, each get their own message on `/login`.
+5. Open the confirm link and enter a wrong password: it must not confirm.
+
 ## Docker / Cloud Run
 
 ```sh
