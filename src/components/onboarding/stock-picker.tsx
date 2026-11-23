@@ -77,11 +77,16 @@ export function StockPicker({
             if (e.key !== "Enter" || e.nativeEvent.isComposing) return;
             e.preventDefault();
             // Enter is easy to hit mid-word ("ne" on the way to "netflix"), so it only
-            // adds when the text can't be a company search: typed as a symbol (upper
-            // case) or matching nothing in the list. The Add button always works.
+            // adds what is clearly a symbol: short, upper case or dotted, or text that
+            // matches nothing in the list. Longer input needs the explicit Add button.
             const raw = query.trim();
-            const looksLikeSymbol = raw === raw.toUpperCase();
-            if (candidate && (looksLikeSymbol || companies.length === 0)) {
+            const symbolish =
+              raw.includes(".") ||
+              (raw.length <= 4 && raw === raw.toUpperCase());
+            if (
+              candidate &&
+              (symbolish || (companies.length === 0 && raw.length <= 4))
+            ) {
               addCandidate(candidate);
             }
           }}

@@ -260,6 +260,8 @@ export function OnboardingFlow({
     const next = toggleTicker(picks, ticker);
     setPicks(next.selected);
     setLimited(next.limited);
+    // A "remove N to continue" error is stale as soon as the list changes.
+    setError(null);
   }
 
   const primaryClass = "relative h-12 w-full rounded-xl text-sm font-semibold";

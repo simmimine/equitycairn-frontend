@@ -187,4 +187,12 @@ describe("StockPicker", () => {
     await user.type(screen.getByRole("searchbox"), "MS{Enter}");
     expect(onToggle).toHaveBeenCalledWith("MS");
   });
+
+  it("Enter does not add a long word typed in capitals", async () => {
+    const onToggle = vi.fn();
+    const user = userEvent.setup();
+    render(<StockPicker selected={[]} limited={false} onToggle={onToggle} />);
+    await user.type(screen.getByRole("searchbox"), "TESLA{Enter}");
+    expect(onToggle).not.toHaveBeenCalled();
+  });
 });

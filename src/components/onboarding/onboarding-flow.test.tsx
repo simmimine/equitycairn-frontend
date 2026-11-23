@@ -346,6 +346,7 @@ describe("OnboardingFlow · failures", () => {
     ).toBeInTheDocument();
     expect(saveWatchlistAction).not.toHaveBeenCalled();
     await user.click(screen.getByRole("button", { name: "Remove AAPL" }));
+    expect(screen.queryByText(/remove 2 to continue/i)).toBeNull();
     await user.click(screen.getByRole("button", { name: "Remove NVDA" }));
     await user.click(cont());
     expect(saveWatchlistAction).toHaveBeenCalled();
