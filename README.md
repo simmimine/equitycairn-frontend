@@ -56,6 +56,15 @@ Tokens are stored only as SHA-256 hashes. Sign-ups are limited to one per minute
 
 Tokens travel in URL query strings, so they appear in Cloud Run request logs (the app itself never logs them). Verification emails are sent with `after()`, i.e. after the response, so run Cloud Run with CPU always allocated (`--no-cpu-throttling`) or delivery may be delayed.
 
+## Login and accounts
+
+Only verified beta members can create an account (see `docs/superpowers/specs/2026-11-23-beta-login-design.md`).
+
+- New variable: `SUPABASE_PUBLISHABLE_KEY` (server-side only).
+- Apply `supabase/migrations/20261124000000_beta_login.sql`.
+- In the Supabase dashboard (Authentication): **disable "Allow new users to sign up"** (accounts are created only by the server with the secret key) and keep **"Confirm email" on**.
+- The confirmation link asks for the password again before confirming; this prevents someone pre-registering a member's address with a password they know.
+
 ## Docker / Cloud Run
 
 ```sh
