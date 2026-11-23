@@ -5,6 +5,8 @@ const generateLink = vi.fn();
 const deleteUser = vi.fn();
 const signInWithPassword = vi.fn();
 const verifyOtp = vi.fn();
+const sessionSignIn = vi.fn();
+const sessionSignOut = vi.fn();
 
 vi.mock("server-only", () => ({}));
 vi.mock("@/lib/supabase/server", () => ({
@@ -15,7 +17,13 @@ vi.mock("@/lib/supabase/server", () => ({
   getSupabaseAnon: () => ({ auth: { signInWithPassword } }),
 }));
 vi.mock("./session", () => ({
-  createSessionClient: async () => ({ auth: { verifyOtp } }),
+  createSessionClient: async () => ({
+    auth: {
+      verifyOtp,
+      signInWithPassword: sessionSignIn,
+      signOut: sessionSignOut,
+    },
+  }),
 }));
 
 import {
@@ -23,6 +31,8 @@ import {
   createPendingAccount,
   getAccountState,
   passwordMatchesPending,
+  signInWithPassword as signInSession,
+  signOutSession,
 } from "./accounts";
 
 beforeEach(() => {
@@ -157,5 +167,37 @@ describe("confirmWithToken", () => {
   it("returns false for a bad token", async () => {
     verifyOtp.mockResolvedValue({ data: {}, error: { message: "expired" } });
     expect(await confirmWithToken("h")).toBe(false);
+  });
+});
+
+describe("signInWithPassword", () => {
+  it("maps success, wrong password and unconfirmed", async () => {
+    sessionSignIn.mockResolvedValue({ data: {}, error: null });
+    expect(await signInSession("a@example.com", "pw")).toBe("ok");
+    sessionSignIn.mockResolvedValue({
+      data: {},
+      error: { code: "invalid_credentials" },
+    });
+    expect(await signInSession("a@example.com", "pw")).toBe("invalid");
+    sessionSignIn.mockResolvedValue({
+      data: {},
+      error: { code: "email_not_confirmed" },
+    });
+    expect(await signInSession("a@example.com", "pw")).toBe("unconfirmed");
+  });
+  it("throws on unexpected errors", async () => {
+    sessionSignIn.mockResolvedValue({
+      data: {},
+      error: { code: "unexpected_failure", status: 500 },
+    });
+    await expect(signInSession("a@example.com", "pw")).rejects.toThrow();
+  });
+});
+
+describe("signOutSession", () => {
+  it("signs out through the session client", async () => {
+    sessionSignOut.mockResolvedValue({ error: null });
+    await signOutSession();
+    expect(sessionSignOut).toHaveBeenCalled();
   });
 });

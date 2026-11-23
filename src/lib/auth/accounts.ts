@@ -78,3 +78,21 @@ export async function confirmWithToken(tokenHash: string): Promise<boolean> {
   });
   return !error;
 }
+
+/** Password sign-in through the session client (sets cookies on success). */
+export async function signInWithPassword(
+  email: string,
+  password: string,
+): Promise<"ok" | "invalid" | "unconfirmed"> {
+  const supabase = await createSessionClient();
+  const { error } = await supabase.auth.signInWithPassword({ email, password });
+  if (!error) return "ok";
+  if (error.code === "email_not_confirmed") return "unconfirmed";
+  if (error.code === "invalid_credentials") return "invalid";
+  throw new Error(`accounts: sign in: ${error.code ?? "unknown"}`);
+}
+
+export async function signOutSession(): Promise<void> {
+  const supabase = await createSessionClient();
+  await supabase.auth.signOut();
+}
