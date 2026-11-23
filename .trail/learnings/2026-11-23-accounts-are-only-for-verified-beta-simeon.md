@@ -3,7 +3,7 @@ title: "Accounts are only for verified beta members, and confirming one needs th
 author: Simeon
 date: 2026-11-23
 branch: feature/beta-login
-cost: { minutes: 13, tokens: 239438 }
+cost: { minutes: 29, tokens: 319185 }
 id: l-c7455124
 scope: repo
 status: active
@@ -23,6 +23,7 @@ touches:
 
 ## Decided
 Login is Supabase Auth for passwords and sessions, with our own Resend confirmation email. The server checks the verified beta list before creating an unconfirmed account, and a database trigger on the account table refuses anyone who isn't a verified member. The email card says plainly whether an address is not on the list, unverified, new, or has an account (the owner chose a clear experience over hiding membership); this is rate limited per client. The confirm link only opens a form: confirming needs the emailed token AND the password chosen at sign-up, so a stranger who pre-registers a member's address with a password they know cannot get it confirmed when the member clicks the link. Re-sending the confirmation re-runs account creation and replaces the pending account.
+Wait for the real request (`connection()`) after reading cookies and before building the Supabase session client, so the client's clock read never lands inside Next's prerender validation.
 
 ## Tried and ruled out
 - Generic "if this email is on the list we've emailed you" messages: the owner found it a poor experience.
@@ -36,3 +37,8 @@ Login is Supabase Auth for passwords and sessions, with our own Resend confirmat
 - The wrong-password check on the confirm page relies on Supabase returning `email_not_confirmed` only after the password is correct; verify against the live project.
 
 In the code: src/lib/auth/accounts.ts, src/app/actions/confirm-account.ts, supabase/migrations/20261124000000_beta_login.sql
+- The error ("Blocking Route ... unstable value Date.now()") only appears in `next dev` when a real session cookie is present. `pnpm build` passed before and after, so the build is not evidence the fix works.
+- The fix was not confirmed in a signed-in dev session when committed. If the error returns, try building the client lazily inside `getUser()` instead.
+- The unit test only proves `connection()` is called, not that Next stops complaining.
+
+In the code: src/lib/auth/session.ts (`createSessionClient`), src/lib/auth/session.test.ts.
