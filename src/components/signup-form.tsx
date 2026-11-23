@@ -18,6 +18,7 @@ import { parseEmail } from "@/lib/signup/email";
 import type { JoinBetaResult } from "@/lib/signup/types";
 
 const INVALID_EMAIL_MESSAGE = "Enter a valid email address";
+const RATE_LIMITED_MESSAGE = "Please wait a minute before trying again";
 const SERVER_ERROR_MESSAGE = "Something went wrong, please try again";
 
 export function SignupForm({ id = "email" }: { id?: string }) {
@@ -39,7 +40,9 @@ export function SignupForm({ id = "email" }: { id?: string }) {
     current && !current.ok
       ? current.error === "invalid_email"
         ? INVALID_EMAIL_MESSAGE
-        : SERVER_ERROR_MESSAGE
+        : current.error === "rate_limited"
+          ? RATE_LIMITED_MESSAGE
+          : SERVER_ERROR_MESSAGE
       : null;
   const error = clientError ?? serverError;
   const invalid = error !== null;

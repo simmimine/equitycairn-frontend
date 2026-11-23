@@ -97,6 +97,41 @@ describe("SignupForm", () => {
     ).toBeInTheDocument();
   });
 
+  it("shows an announced wait message on rate_limited, keeps the email, and clears on edit", async () => {
+    joinBeta.mockResolvedValue({
+      ok: false,
+      error: "rate_limited",
+      retryAfterSeconds: 30,
+    } satisfies JoinBetaResult);
+    const { user } = setup();
+    const input = screen.getByLabelText(/email/i);
+    await user.type(input, "a@b.co");
+    await user.click(screen.getByRole("button"));
+
+    const alert = await screen.findByRole("alert");
+    expect(alert).toHaveTextContent("Please wait a minute before trying again");
+    expect(input).toHaveValue("a@b.co");
+    expect(input).toHaveAttribute("aria-invalid", "true");
+    expect(input).toHaveAttribute("aria-describedby", alert.id);
+    expect(screen.queryByText(/you're on the list/i)).toBeNull();
+
+    await user.type(input, "m");
+    expect(
+      screen.queryByText("Please wait a minute before trying again"),
+    ).toBeNull();
+    expect(input).toHaveValue("a@b.com");
+    expect(input).not.toHaveAttribute("aria-invalid");
+  });
+
+  it("shows the inline success for the honeypot-style { ok: true } result", async () => {
+    joinBeta.mockResolvedValue({ ok: true } satisfies JoinBetaResult);
+    const { user } = setup();
+    await user.type(screen.getByLabelText(/email/i), "a@b.co");
+    await user.click(screen.getByRole("button"));
+    expect(await screen.findByText("You're on the list")).toBeInTheDocument();
+    expect(screen.queryByRole("alert")).toBeNull();
+  });
+
   it("keeps the typed email after a server error", async () => {
     joinBeta.mockResolvedValue({
       ok: false,
