@@ -64,6 +64,8 @@ describe("tickerCandidate", () => {
 
   it("offers nothing for popular tickers, selected tickers or non-tickers", () => {
     expect(tickerCandidate("aapl", [])).toBeNull();
+    expect(tickerCandidate("apple", [])).toBeNull();
+    expect(tickerCandidate("micro", [])).toBeNull();
     expect(tickerCandidate("zzzz", ["ZZZZ"])).toBeNull();
     expect(tickerCandidate("abcdefg", [])).toBeNull();
     expect(tickerCandidate("ab1", [])).toBeNull();

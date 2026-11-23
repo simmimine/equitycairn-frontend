@@ -26,11 +26,13 @@ export function WatchlistPanel({
       <CardHeader>
         <CardTitle className="flex items-baseline justify-between">
           <h2 className="text-lg font-semibold">Your watchlist</h2>
-          <span
-            aria-label={`${selected.length} of ${MAX_PICKS} companies chosen`}
-            className="text-xs font-semibold text-primary tabular-nums"
-          >
-            {selected.length} / {MAX_PICKS}
+          <span className="text-xs font-semibold text-primary tabular-nums">
+            <span className="sr-only">
+              {selected.length} of {MAX_PICKS} companies chosen
+            </span>
+            <span aria-hidden="true">
+              {selected.length} / {MAX_PICKS}
+            </span>
           </span>
         </CardTitle>
       </CardHeader>

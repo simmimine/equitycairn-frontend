@@ -6,7 +6,13 @@ import { expect, test, type Page } from "@playwright/test";
 type Call = { action: string; args: unknown[] };
 
 async function open(page: Page, query = "") {
-  await page.goto(`/e2e-onboarding${query}`);
+  const response = await page.goto(`/e2e-onboarding${query}`);
+  if (response?.status() === 404) {
+    throw new Error(
+      "/e2e-onboarding is 404: the server was started without E2E_FAKE_ONBOARDING=1. " +
+        "Stop any running dev server so Playwright can start its own, or start yours with that variable.",
+    );
+  }
   await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
 }
 
@@ -397,5 +403,32 @@ test.describe("layout", () => {
       "background-color",
       "rgb(7, 31, 34)",
     );
+  });
+});
+
+test.describe("keyboard", () => {
+  test("Enter in the watchlist search adds a ticker instead of finishing", async ({
+    page,
+  }) => {
+    await open(page, "?step=watchlist");
+    await page
+      .getByRole("searchbox", { name: "Search companies" })
+      .fill("tsla");
+    await page.keyboard.press("Enter");
+    await expect(page.getByText("1 selected")).toBeVisible();
+    await expect(page.getByText("Onboarding finished")).toHaveCount(0);
+    expect(await calls(page)).toEqual([]);
+  });
+
+  test("radio groups are named for assistive tech", async ({ page }) => {
+    await open(page, "?step=about");
+    await expect(
+      page.getByRole("radiogroup", { name: "What best describes your role?" }),
+    ).toBeVisible();
+    await expect(
+      page.getByRole("radiogroup", {
+        name: "How would you describe your experience?",
+      }),
+    ).toBeVisible();
   });
 });

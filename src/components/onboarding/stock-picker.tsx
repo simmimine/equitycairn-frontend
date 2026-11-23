@@ -69,6 +69,16 @@ export function StockPicker({
           autoComplete="off"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
+          onKeyDown={(e) => {
+            // Enter in the search box must never submit the onboarding form
+            // (that would finish onboarding); use it to add the offered ticker.
+            if (e.key !== "Enter") return;
+            e.preventDefault();
+            if (candidate) {
+              onToggle(candidate);
+              setQuery("");
+            }
+          }}
         />
       </InputGroup>
 
@@ -192,9 +202,12 @@ export function StockPicker({
         </Button>
       )}
 
-      {limited && (
+      {(limited || selected.length > MAX_PICKS) && (
         <p role="alert" className="text-sm text-destructive">
-          You can follow up to {MAX_PICKS} companies. Remove one to add another.
+          You can follow up to {MAX_PICKS} companies.{" "}
+          {selected.length > MAX_PICKS
+            ? `You have ${selected.length} saved, so remove some to add more.`
+            : "Remove one to add another."}
         </p>
       )}
 

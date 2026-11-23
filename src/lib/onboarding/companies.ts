@@ -116,7 +116,8 @@ export function tickerCandidate(
   const t = query.trim().toUpperCase();
   if (!TICKER_LIKE.test(t)) return null;
   if (selected.includes(t)) return null;
-  if (POPULAR_COMPANIES.some((c) => c.ticker === t)) return null;
+  // Ordinary words ("apple") match a company card; adding them as tickers would save junk.
+  if (filterCompanies(t, "All").length > 0) return null;
   return t;
 }
 

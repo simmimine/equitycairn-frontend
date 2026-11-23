@@ -1,3 +1,5 @@
+import { useId } from "react";
+
 import {
   Field,
   FieldContent,
@@ -24,13 +26,14 @@ export function OptionCards({
   options: readonly (readonly [string, string])[];
   className?: string;
 }) {
+  const legendId = useId();
   return (
     <div className="flex flex-col gap-3">
-      <p id={`${legend}-legend`} className="text-sm font-semibold">
+      <p id={legendId} className="text-sm font-semibold">
         {legend}
       </p>
       <RadioGroup
-        aria-labelledby={`${legend}-legend`}
+        aria-labelledby={legendId}
         value={value}
         onValueChange={(v) => onValueChange(String(v))}
         className={cn("flex flex-wrap gap-3", className)}

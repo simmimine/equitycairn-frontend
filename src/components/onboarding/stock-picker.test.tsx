@@ -100,4 +100,36 @@ describe("StockPicker", () => {
     await user.type(screen.getByRole("searchbox"), "visa");
     expect(screen.queryByRole("checkbox", { name: /ZZZZ/ })).toBeNull();
   });
+
+  it("Enter in the search box adds the offered ticker and never submits a form", async () => {
+    const onToggle = vi.fn();
+    const onSubmit = vi.fn((e: React.FormEvent) => e.preventDefault());
+    const user = userEvent.setup();
+    render(
+      <form onSubmit={onSubmit}>
+        <StockPicker selected={[]} limited={false} onToggle={onToggle} />
+        <button type="submit">Go</button>
+      </form>,
+    );
+    await user.type(screen.getByRole("searchbox"), "tsla{Enter}");
+    expect(onToggle).toHaveBeenCalledWith("TSLA");
+    expect(onSubmit).not.toHaveBeenCalled();
+    await user.type(screen.getByRole("searchbox"), "apple{Enter}");
+    expect(onToggle).toHaveBeenCalledTimes(1);
+    expect(onSubmit).not.toHaveBeenCalled();
+  });
+
+  it("does not offer a ticker for a word that matches a company", async () => {
+    const { user } = setup();
+    await user.type(screen.getByRole("searchbox"), "apple");
+    expect(screen.queryByRole("button", { name: /add “/i })).toBeNull();
+  });
+
+  it("explains a saved list that is already over the cap", () => {
+    const many = POPULAR_COMPANIES.slice(0, MAX_PICKS + 2).map((c) => c.ticker);
+    setup(many);
+    expect(screen.getByRole("alert")).toHaveTextContent(
+      `You have ${many.length} saved`,
+    );
+  });
 });
