@@ -26,6 +26,10 @@ After someone joins the beta they should get an email with a verification link t
 - No custom domain / DKIM setup, no HTML email design system, no unsubscribe flow, no admin UI, no marketing emails, no CAPTCHA.
 - Verification does not log anyone in; there are no accounts.
 
+### Known limitations
+
+- A new address and an existing address still differ slightly in response time: about 1 database round trip for a new address versus 4-5 for an existing one (tens of milliseconds). The difference is hidden from the response body, the redirect shape and the email send, and is bounded by the one-sign-up-per-minute-per-IP limit. Folding each path into a single RPC would close it.
+
 ## Anti-goals
 
 - A verification link or the `/join-beta` token that lets someone verify an address they cannot read mail for.
@@ -48,7 +52,7 @@ New table `public.signup_rate_limits (key text primary key, last_attempt_at time
 
 ### Server behaviour
 
-- **`joinBeta` (existing action):** honeypot → validate email → **IP throttle** (key = hash of the client IP from `x-forwarded-for`, first value; 1 attempt / 60 s; over the limit returns `{ ok:false, error:"rate_limited", retryAfterSeconds }` and the form shows "Please wait a minute before trying again") → insert or find the row → create a fresh manage token and, **if the row is not verified and `last_email_sent_at` is older than 60 s (or null)**, a fresh verify token + send the email → `redirect("/join-beta?token=<manage token>")`. A verified duplicate gets no email but the same redirect. Honeypot hits keep returning the old inline `{ ok:true }`.
+- **`joinBeta` (existing action):** honeypot → validate email → **IP throttle** (key = hash of the client IP taken from `x-forwarded-for`, counted from the right using `TRUSTED_PROXY_HOPS` (default 1), because the leftmost entry is client-controlled; 1 attempt / 60 s; over the limit returns `{ ok:false, error:"rate_limited", retryAfterSeconds }` and the form shows "Please wait a minute before trying again") → insert or find the row → create a fresh manage token and, **if the row is not verified and `last_email_sent_at` is older than 60 s (or null)**, a fresh verify token + send the email → `redirect("/join-beta?token=<manage token>")`. A verified duplicate gets no email but the same redirect. Honeypot hits keep returning the old inline `{ ok:true }`.
 - **`resendVerification(token)` (new action):** looks up by manage-token hash; unknown token → generic error; verified → no-op that looks like success; unverified and cooldown elapsed → new verify token, send, update `last_email_sent_at`; cooldown not elapsed → `{ ok:false, error:"cooldown", retryAfterSeconds }`. The **server** decides the cooldown; the client countdown is only display.
 - **Email sending:** a small module posting to Resend's REST API (`POST https://api.resend.com/emails`) with `fetch` — no new dependency. Subject "Confirm your EquityCairn beta sign-up", text + minimal HTML body with the link `${SITE_URL}/join-beta/verify?token=<raw>`. A send failure is logged without the email or token; the redirect and sign-up still stand, and the page's re-send button is the recovery path.
 - **`/join-beta/verify` (server page):** hashes the token, finds the row, checks expiry, sets `verified_at`, keeps the verify token hash so a second click reports "already verified" (idempotent). Renders: success; "already verified" (idempotent, also shown on a second click); "invalid or expired link" with a link back to `/#join`. Verification happens on page load (a link scanner prefetching it could verify early — accepted for a waitlist).

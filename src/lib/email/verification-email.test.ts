@@ -129,4 +129,45 @@ describe("sendVerificationEmail", () => {
     expect(errorSpy).toHaveBeenCalled();
     expectNoLeak();
   });
+
+  describe("SITE_URL in production", () => {
+    afterEach(() => {
+      vi.unstubAllEnvs();
+    });
+
+    it("returns false without fetching when SITE_URL is unset", async () => {
+      vi.stubEnv("NODE_ENV", "production");
+      expect(await sendVerificationEmail(ADDRESS, TOKEN)).toBe(false);
+      expect(fetchMock).not.toHaveBeenCalled();
+      expect(errorSpy).toHaveBeenCalledWith("SITE_URL is not set");
+      expect(loggedText()).not.toContain(ADDRESS);
+      expect(loggedText()).not.toContain(TOKEN);
+    });
+
+    it("treats a blank SITE_URL as unset", async () => {
+      vi.stubEnv("NODE_ENV", "production");
+      process.env.SITE_URL = "   ";
+      expect(await sendVerificationEmail(ADDRESS, TOKEN)).toBe(false);
+      expect(fetchMock).not.toHaveBeenCalled();
+    });
+
+    it("sends when SITE_URL is set", async () => {
+      vi.stubEnv("NODE_ENV", "production");
+      process.env.SITE_URL = "https://example.org";
+      fetchMock.mockResolvedValue({ ok: true, status: 200 });
+      expect(await sendVerificationEmail(ADDRESS, TOKEN)).toBe(true);
+      expect(fetchMock).toHaveBeenCalledTimes(1);
+    });
+
+    it.each(["development", "test"])(
+      "still defaults to localhost in %s",
+      async (env) => {
+        vi.stubEnv("NODE_ENV", env);
+        fetchMock.mockResolvedValue({ ok: true, status: 200 });
+        expect(await sendVerificationEmail(ADDRESS, TOKEN)).toBe(true);
+        const body = JSON.parse(fetchMock.mock.calls[0][1].body);
+        expect(body.text).toContain("http://localhost:3000/join-beta/verify");
+      },
+    );
+  });
 });

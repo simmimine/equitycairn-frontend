@@ -27,14 +27,14 @@ Add shadcn components with `pnpm dlx shadcn@latest add <component>`.
 
 The landing page's beta sign-up form is handled by server actions that write to Supabase and send a verification email through Resend. All of these are **server-only** variables (never prefix them with `NEXT_PUBLIC_`, or they would be exposed to the browser):
 
-| Variable              | Purpose                                                                                                         |
-| --------------------- | --------------------------------------------------------------------------------------------------------------- |
-| `SUPABASE_URL`        | Supabase project URL                                                                                            |
-| `SUPABASE_SECRET_KEY` | Supabase secret key (bypasses RLS; keep it out of git)                                                          |
-| `RESEND_API_KEY`      | Resend API key. Without it no email is sent (sign-up still succeeds)                                            |
-| `EMAIL_FROM`          | Sender. Default `EquityCairn <onboarding@resend.dev>`                                                           |
-| `SITE_URL`            | Base URL used in email links. Default `http://localhost:3000`; **must be the public URL when deployed**         |
-| `TRUSTED_PROXY_HOPS`  | Trusted proxies in front of the app. Default `1` (last `x-forwarded-for` entry, correct for Cloud Run directly) |
+| Variable              | Purpose                                                                                                                                    |
+| --------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
+| `SUPABASE_URL`        | Supabase project URL                                                                                                                       |
+| `SUPABASE_SECRET_KEY` | Supabase secret key (bypasses RLS; keep it out of git)                                                                                     |
+| `RESEND_API_KEY`      | Resend API key. Without it no email is sent (sign-up still succeeds)                                                                       |
+| `EMAIL_FROM`          | Sender. Default `EquityCairn <onboarding@resend.dev>`                                                                                      |
+| `SITE_URL`            | Base URL used in email links. Default `http://localhost:3000` outside production; **required in production** (no email is sent without it) |
+| `TRUSTED_PROXY_HOPS`  | Trusted proxies in front of the app. Default `1` (last `x-forwarded-for` entry, correct for Cloud Run directly)                            |
 
 Set `TRUSTED_PROXY_HOPS=2` behind a Google HTTPS load balancer. With no proxy in front of the app, `x-forwarded-for` is fully client-controlled, so the per-IP sign-up limit can be bypassed.
 

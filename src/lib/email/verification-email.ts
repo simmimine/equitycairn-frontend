@@ -21,10 +21,12 @@ export async function sendVerificationEmail(
   }
 
   const from = process.env.EMAIL_FROM || DEFAULT_FROM;
-  const siteUrl = (process.env.SITE_URL || DEFAULT_SITE_URL).replace(
-    /\/+$/,
-    "",
-  );
+  const configuredSiteUrl = process.env.SITE_URL?.trim();
+  if (!configuredSiteUrl && process.env.NODE_ENV === "production") {
+    console.error("SITE_URL is not set");
+    return false;
+  }
+  const siteUrl = (configuredSiteUrl || DEFAULT_SITE_URL).replace(/\/+$/, "");
   const link = `${siteUrl}/join-beta/verify?token=${encodeURIComponent(rawVerifyToken)}`;
 
   const safeLink = escapeHtml(link);
