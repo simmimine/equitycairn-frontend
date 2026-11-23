@@ -234,3 +234,49 @@ export async function verifyEmail(
     ?.verified_at;
   return verifiedAt ? "already_verified" : "invalid";
 }
+
+type BetaRow = {
+  id: string;
+  verified_at: string | null;
+  last_email_sent_at: string | null;
+};
+
+async function findByEmail(email: string): Promise<BetaRow | null> {
+  const { data, error } = await getSupabaseAdmin()
+    .from(TABLE)
+    .select("id,verified_at,last_email_sent_at")
+    .eq("email", email.trim().toLowerCase())
+    .maybeSingle();
+  if (error) fail("find by email", error);
+  return (data as BetaRow | null) ?? null;
+}
+
+export async function getBetaStatus(
+  email: string,
+): Promise<"not_listed" | "unverified" | "verified"> {
+  const row = await findByEmail(email);
+  if (!row) return "not_listed";
+  return row.verified_at ? "verified" : "unverified";
+}
+
+/** Re-issue the beta verification token for an unverified address (login flow). */
+export async function issueVerifyByEmail(
+  email: string,
+): Promise<
+  | { status: "sent"; verifyToken: string }
+  | { status: "cooldown"; retryAfterSeconds: number }
+  | { status: "noop" }
+> {
+  const row = await findByEmail(email);
+  if (!row || row.verified_at) return { status: "noop" };
+  const now = new Date();
+  const issued = await issueVerifyToken("id", row.id, now);
+  if (issued) return { status: "sent", verifyToken: issued.raw };
+  return {
+    status: "cooldown",
+    retryAfterSeconds: Math.max(
+      1,
+      remainingSeconds(row.last_email_sent_at, now),
+    ),
+  };
+}

@@ -12,8 +12,10 @@ vi.mock("@/lib/supabase/server", () => ({
 import { COOLDOWN_SECONDS, VERIFY_TTL_HOURS } from "./constants";
 import {
   checkSignupRateLimit,
+  getBetaStatus,
   getSignupStatus,
   issueResend,
+  issueVerifyByEmail,
   registerSignup,
   verifyEmail,
 } from "./store";
@@ -353,5 +355,51 @@ describe("verified/unverified timing parity", () => {
     );
     expect(u.manageToken).not.toBe(u2.manageToken);
     expect(v.manageToken).not.toBe(v2.manageToken);
+  });
+});
+
+describe("getBetaStatus", () => {
+  it("returns not_listed for an unknown address", async () => {
+    expect(await getBetaStatus("nobody@example.com")).toBe("not_listed");
+  });
+
+  it("returns unverified, then verified, ignoring case and spaces", async () => {
+    const { verifyToken } = await registerSignup("Foo@Example.com");
+    expect(await getBetaStatus("  FOO@example.COM ")).toBe("unverified");
+    await verifyEmail(verifyToken!);
+    expect(await getBetaStatus("foo@example.com")).toBe("verified");
+  });
+});
+
+describe("issueVerifyByEmail", () => {
+  it("returns cooldown right after sign-up", async () => {
+    await registerSignup("a@example.com");
+    advance(10);
+    expect(await issueVerifyByEmail("a@example.com")).toEqual({
+      status: "cooldown",
+      retryAfterSeconds: COOLDOWN_SECONDS - 10,
+    });
+  });
+
+  it("issues a new token once the cooldown has elapsed", async () => {
+    const first = await registerSignup("a@example.com");
+    advance(COOLDOWN_SECONDS + 1);
+    const result = await issueVerifyByEmail(" A@example.com ");
+    expect(result.status).toBe("sent");
+    if (result.status !== "sent") return;
+    expect(result.verifyToken).not.toBe(first.verifyToken);
+    expect(await verifyEmail(result.verifyToken)).toBe("verified");
+  });
+
+  it("is a no-op for verified and unknown addresses", async () => {
+    const { verifyToken } = await registerSignup("a@example.com");
+    await verifyEmail(verifyToken!);
+    advance(COOLDOWN_SECONDS + 1);
+    expect(await issueVerifyByEmail("a@example.com")).toEqual({
+      status: "noop",
+    });
+    expect(await issueVerifyByEmail("nobody@example.com")).toEqual({
+      status: "noop",
+    });
   });
 });
