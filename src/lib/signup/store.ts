@@ -17,15 +17,11 @@ function cooldownCutoff(now: Date): string {
   return new Date(now.getTime() - COOLDOWN_SECONDS * 1000).toISOString();
 }
 
-function remainingSeconds(
-  lastSent: string | null,
-  verifiedAt: string | null,
-  now: Date,
-): number {
-  if (verifiedAt || !lastSent) return 0;
+function remainingSeconds(lastSent: string | null, now: Date): number {
+  if (!lastSent) return 0;
   const endsAt = new Date(lastSent).getTime() + COOLDOWN_SECONDS * 1000;
   if (endsAt <= now.getTime()) return 0;
-  return Math.ceil((endsAt - now.getTime()) / 1000);
+  return Math.min(COOLDOWN_SECONDS, Math.ceil((endsAt - now.getTime()) / 1000));
 }
 
 function verifyFields(now: Date) {
@@ -40,11 +36,6 @@ function verifyFields(now: Date) {
       last_email_sent_at: now.toISOString(),
     },
   };
-}
-
-/** Escape LIKE wildcards so ilike behaves as case-insensitive equality. */
-function escapeLike(value: string): string {
-  return value.replace(/[\\%_]/g, "\\$&");
 }
 
 export async function checkSignupRateLimit(
@@ -85,6 +76,28 @@ async function issueVerifyToken(
   return Array.isArray(data) && data.length === 1 ? token.raw : null;
 }
 
+/**
+ * Restart the cooldown without issuing a token, if it has elapsed. Used for
+ * verified rows so their timing matches unverified rows. Returns whether the
+ * bump happened.
+ */
+async function bumpCooldown(
+  column: "manage_token_hash" | "id",
+  value: string | number,
+  now: Date,
+): Promise<boolean> {
+  const { data, error } = await getSupabaseAdmin()
+    .from(TABLE)
+    .update({ last_email_sent_at: now.toISOString() })
+    .eq(column, value)
+    .or(
+      `last_email_sent_at.is.null,last_email_sent_at.lte.${cooldownCutoff(now)}`,
+    )
+    .select("id");
+  if (error) fail("bump cooldown", error);
+  return Array.isArray(data) && data.length === 1;
+}
+
 export async function registerSignup(
   email: string,
 ): Promise<{ manageToken: string; verifyToken: string | null }> {
@@ -108,7 +121,7 @@ export async function registerSignup(
   const { data: existing, error: findError } = await db
     .from(TABLE)
     .select("id")
-    .ilike("email", escapeLike(address))
+    .eq("email", address)
     .maybeSingle();
   if (findError) fail("find existing", findError);
   if (!existing) fail("find existing", { message: "row not found" });
@@ -124,10 +137,11 @@ export async function registerSignup(
     fail("rotate manage token", { message: "row not found" });
   }
 
-  return {
-    manageToken: manage.raw,
-    verifyToken: await issueVerifyToken("id", id, now),
-  };
+  const verifyToken = await issueVerifyToken("id", id, now);
+  // A verified row never gets a token, but its cooldown must behave exactly
+  // like an unverified row's so timing does not reveal verification state.
+  if (!verifyToken) await bumpCooldown("id", id, now);
+  return { manageToken: manage.raw, verifyToken };
 }
 
 type StatusRow = {
@@ -153,7 +167,6 @@ export async function getSignupStatus(
   return {
     cooldownRemainingSeconds: remainingSeconds(
       row.last_email_sent_at,
-      row.verified_at,
       new Date(),
     ),
   };
@@ -174,12 +187,14 @@ export async function issueResend(
 
   const row = await findByManageHash(hash);
   if (!row) return { status: "invalid" };
-  if (row.verified_at) return { status: "noop" };
+  if (row.verified_at && (await bumpCooldown("manage_token_hash", hash, now))) {
+    return { status: "noop" };
+  }
   return {
     status: "cooldown",
     retryAfterSeconds: Math.max(
       1,
-      remainingSeconds(row.last_email_sent_at, null, now),
+      remainingSeconds(row.last_email_sent_at, now),
     ),
   };
 }

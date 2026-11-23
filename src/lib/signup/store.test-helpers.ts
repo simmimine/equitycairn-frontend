@@ -30,24 +30,6 @@ function parseOr(expr: string): Predicate {
   return (row) => clauses.some((c) => c(row));
 }
 
-function ilikeExact(pattern: string): (value: string) => boolean {
-  // Accept only fully escaped patterns: any unescaped % or _ is rejected so
-  // the store cannot rely on wildcard matching by accident.
-  let literal = "";
-  for (let i = 0; i < pattern.length; i++) {
-    const ch = pattern[i];
-    if (ch === "\\") {
-      literal += pattern[++i];
-    } else if (ch === "%" || ch === "_") {
-      throw new Error("fake: unescaped wildcard in ilike pattern");
-    } else {
-      literal += ch;
-    }
-  }
-  const want = literal.toLowerCase();
-  return (value) => value.toLowerCase() === want;
-}
-
 export class FakeDb {
   rows: Row[] = [];
   rpcImpl: (fn: string, args: Record<string, unknown>) => Result["data"] =
@@ -123,13 +105,6 @@ class FakeQuery implements PromiseLike<Result> {
   }
   eq(col: string, val: unknown) {
     this.preds.push((r) => r[col] === val);
-    return this;
-  }
-  ilike(col: string, pattern: string) {
-    const match = ilikeExact(pattern);
-    this.preds.push(
-      (r) => typeof r[col] === "string" && match(r[col] as string),
-    );
     return this;
   }
   is(col: string, val: null) {

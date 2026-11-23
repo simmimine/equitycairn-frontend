@@ -124,14 +124,26 @@ describe("registerSignup", () => {
     expect(db.rows[0].manage_token_hash).toBe(hashToken(r.manageToken));
   });
 
-  it("does not treat underscore as a wildcard when looking up", async () => {
-    await registerSignup("a_n@example.com");
-    await registerSignup("abn@example.com");
+  it("finds the same row despite surrounding whitespace", async () => {
+    await registerSignup("ann@example.com");
     advance(COOLDOWN_SECONDS);
-    const r = await registerSignup("a_n@example.com");
-    expect(db.rows).toHaveLength(2);
+    const r = await registerSignup("  Ann@example.com ");
+    expect(db.rows).toHaveLength(1);
     expect(db.rows[0].manage_token_hash).toBe(hashToken(r.manageToken));
-    expect(db.rows[1].manage_token_hash).not.toBe(hashToken(r.manageToken));
+  });
+
+  it("bumps last_email_sent_at for a verified row after the cooldown without a verify token", async () => {
+    const first = await registerSignup("ann@example.com");
+    await verifyEmail(first.verifyToken!);
+    const stored = db.rows[0].verify_token_hash;
+    advance(COOLDOWN_SECONDS - 1);
+    await registerSignup("ann@example.com");
+    expect(db.rows[0].last_email_sent_at).toBe(T0.toISOString());
+    advance(1);
+    const again = await registerSignup("ann@example.com");
+    expect(again.verifyToken).toBeNull();
+    expect(db.rows[0].last_email_sent_at).toBe(new Date().toISOString());
+    expect(db.rows[0].verify_token_hash).toBe(stored);
   });
 
   it("concurrent double signups yield a single verify token", async () => {
@@ -173,16 +185,21 @@ describe("getSignupStatus", () => {
     });
   });
 
-  it("is 0 once the cooldown has passed and for verified rows", async () => {
+  it("is 0 once the cooldown has passed", async () => {
     const r = await registerSignup("ann@example.com");
     advance(COOLDOWN_SECONDS);
     expect(await getSignupStatus(r.manageToken)).toEqual({
       cooldownRemainingSeconds: 0,
     });
-    const v = await registerSignup("bob@example.com");
-    await verifyEmail(v.verifyToken!);
-    expect(await getSignupStatus(v.manageToken)).toEqual({
-      cooldownRemainingSeconds: 0,
+  });
+
+  it("caps the remaining seconds when last_email_sent_at is in the future", async () => {
+    const r = await registerSignup("ann@example.com");
+    db.rows[0].last_email_sent_at = new Date(
+      T0.getTime() + 3600_000,
+    ).toISOString();
+    expect(await getSignupStatus(r.manageToken)).toEqual({
+      cooldownRemainingSeconds: COOLDOWN_SECONDS,
     });
   });
 });
@@ -269,5 +286,59 @@ describe("verifyEmail", () => {
     const r = await registerSignup("ann@example.com");
     expect(await verifyEmail(r.manageToken)).toBe("invalid");
     expect(db.rows[0].verified_at).toBeNull();
+  });
+});
+
+describe("verified/unverified timing parity", () => {
+  async function pair() {
+    const u = await registerSignup("unverified@example.com");
+    const v = await registerSignup("verified@example.com");
+    await verifyEmail(v.verifyToken!);
+    return { u, v };
+  }
+
+  it("reports the same cooldown in status at every stage", async () => {
+    const { u, v } = await pair();
+    for (const step of [0, 20, 39, 1, 5]) {
+      advance(step);
+      expect(await getSignupStatus(v.manageToken)).toEqual(
+        await getSignupStatus(u.manageToken),
+      );
+    }
+  });
+
+  it("resend: same cooldown class and seconds, success after cooldown", async () => {
+    const { u, v } = await pair();
+    expect(await issueResend(v.manageToken)).toEqual(
+      await issueResend(u.manageToken),
+    );
+    advance(25);
+    const uc = await issueResend(u.manageToken);
+    expect(uc).toEqual({ status: "cooldown", retryAfterSeconds: 35 });
+    expect(await issueResend(v.manageToken)).toEqual(uc);
+    advance(35);
+    expect((await issueResend(u.manageToken)).status).toBe("sent");
+    expect(await issueResend(v.manageToken)).toEqual({ status: "noop" });
+    // A verified resend restarts the cooldown just like a sent one.
+    expect(await getSignupStatus(v.manageToken)).toEqual(
+      await getSignupStatus(u.manageToken),
+    );
+    expect(await issueResend(v.manageToken)).toEqual(
+      await issueResend(u.manageToken),
+    );
+  });
+
+  it("repeat registerSignup gives the same status for both", async () => {
+    const { u, v } = await pair();
+    advance(COOLDOWN_SECONDS);
+    const u2 = await registerSignup("unverified@example.com");
+    const v2 = await registerSignup("verified@example.com");
+    expect(u2.verifyToken).not.toBeNull();
+    expect(v2.verifyToken).toBeNull();
+    expect(await getSignupStatus(v2.manageToken)).toEqual(
+      await getSignupStatus(u2.manageToken),
+    );
+    expect(u.manageToken).not.toBe(u2.manageToken);
+    expect(v.manageToken).not.toBe(v2.manageToken);
   });
 });
