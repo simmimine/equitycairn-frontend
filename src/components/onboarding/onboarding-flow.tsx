@@ -180,6 +180,7 @@ export function OnboardingFlow({
   const index = STEPS.indexOf(step);
   const go = (next: OnboardingStep) => {
     setError(null);
+    setLimited(false);
     setStep(next);
   };
   const back = () => go(STEPS[Math.max(0, index - 1)]);

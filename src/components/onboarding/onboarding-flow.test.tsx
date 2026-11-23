@@ -404,4 +404,23 @@ describe("OnboardingFlow · failures", () => {
     expect(await screen.findByText(/add your name first/i)).toBeInTheDocument();
     expect(screen.queryByText(/one to six letters/i)).toBeNull();
   });
+
+  it("does not show a stale cap warning after leaving and returning", async () => {
+    const ten = "AAPL NVDA MSFT V JNJ KO GOOGL AMZN JPM PFE";
+    const user = userEvent.setup();
+    render(
+      <OnboardingFlow
+        initial={{ ...NAMED, tickers: ten }}
+        startStep="watchlist"
+      />,
+    );
+    await user.click(screen.getByRole("checkbox", { name: /mcdonald/i }));
+    expect(screen.getByRole("alert")).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: /back/i }));
+    await user.click(
+      await screen.findByRole("button", { name: /choose companies/i }),
+    );
+    await screen.findByRole("heading", { name: /choose companies to follow/i });
+    expect(screen.queryByRole("alert")).toBeNull();
+  });
 });

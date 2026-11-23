@@ -76,7 +76,14 @@ export function StockPicker({
             // (that would finish onboarding); use it to add the offered ticker.
             if (e.key !== "Enter" || e.nativeEvent.isComposing) return;
             e.preventDefault();
-            if (candidate) addCandidate(candidate);
+            // Enter is easy to hit mid-word ("ne" on the way to "netflix"), so it only
+            // adds when the text can't be a company search: typed as a symbol (upper
+            // case) or matching nothing in the list. The Add button always works.
+            const raw = query.trim();
+            const looksLikeSymbol = raw === raw.toUpperCase();
+            if (candidate && (looksLikeSymbol || companies.length === 0)) {
+              addCandidate(candidate);
+            }
           }}
         />
       </InputGroup>

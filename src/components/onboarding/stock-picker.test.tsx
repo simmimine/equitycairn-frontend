@@ -168,4 +168,23 @@ describe("StockPicker", () => {
     fireEvent.keyDown(box, { key: "Enter" });
     expect(onToggle).toHaveBeenCalledWith("ZZ");
   });
+
+  it("Enter mid-word does not add a ticker that is just the start of a company search", async () => {
+    const onToggle = vi.fn();
+    const user = userEvent.setup();
+    render(<StockPicker selected={[]} limited={false} onToggle={onToggle} />);
+    await user.type(screen.getByRole("searchbox"), "ms{Enter}");
+    expect(onToggle).not.toHaveBeenCalled();
+    // The explicit button still works for it.
+    await user.click(screen.getByRole("button", { name: /add “MS”/i }));
+    expect(onToggle).toHaveBeenCalledWith("MS");
+  });
+
+  it("Enter adds a ticker typed in capitals", async () => {
+    const onToggle = vi.fn();
+    const user = userEvent.setup();
+    render(<StockPicker selected={[]} limited={false} onToggle={onToggle} />);
+    await user.type(screen.getByRole("searchbox"), "MS{Enter}");
+    expect(onToggle).toHaveBeenCalledWith("MS");
+  });
 });
