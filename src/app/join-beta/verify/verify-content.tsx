@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { connection } from "next/server";
 
 import { JoinBetaShell } from "@/components/join-beta/join-beta-shell";
 import { buttonVariants } from "@/components/ui/button";
@@ -58,6 +59,10 @@ export async function VerifyContent({
     />
   );
   if (!token) return invalid;
+
+  // verifyEmail reads the clock and writes to the database: it must only run
+  // for a real request, never while prerendering or prefetching this route.
+  await connection();
 
   let result;
   try {

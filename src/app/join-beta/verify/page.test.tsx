@@ -2,8 +2,21 @@ import { cleanup, render, screen } from "@testing-library/react";
 import { Suspense } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-const { verifyEmail } = vi.hoisted(() => ({ verifyEmail: vi.fn() }));
+const { verifyEmail, connection, calls } = vi.hoisted(() => {
+  const calls: string[] = [];
+  return {
+    calls,
+    verifyEmail: vi.fn(async () => {
+      calls.push("verifyEmail");
+      return "verified";
+    }),
+    connection: vi.fn(async () => {
+      calls.push("connection");
+    }),
+  };
+});
 vi.mock("@/lib/signup/store", () => ({ verifyEmail }));
+vi.mock("next/server", () => ({ connection }));
 
 import { VerifyContent } from "./verify-content";
 import VerifyPage, { metadata } from "./page";
@@ -18,6 +31,12 @@ async function renderPage(token: string | string[] | undefined) {
 describe("/join-beta/verify", () => {
   beforeEach(() => {
     verifyEmail.mockReset();
+    verifyEmail.mockImplementation(async () => {
+      calls.push("verifyEmail");
+      return "verified";
+    });
+    connection.mockClear();
+    calls.length = 0;
     vi.spyOn(console, "error").mockImplementation(() => {});
   });
   afterEach(() => {
@@ -40,6 +59,17 @@ describe("/join-beta/verify", () => {
 
   it("is not indexable", () => {
     expect(metadata.robots).toEqual({ index: false, follow: false });
+  });
+
+  it("waits for a real request (connection) before the store call that reads the clock", async () => {
+    await renderPage(TOKEN);
+    expect(calls).toEqual(["connection", "verifyEmail"]);
+  });
+
+  it("does not need a request-time connection when the token is invalid", async () => {
+    await renderPage("junk");
+    expect(connection).not.toHaveBeenCalled();
+    expect(verifyEmail).not.toHaveBeenCalled();
   });
 
   it("shows success when verified", async () => {

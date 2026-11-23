@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { connection } from "next/server";
 
 import { JoinBetaShell } from "@/components/join-beta/join-beta-shell";
 import { ResendButton } from "@/components/join-beta/resend-button";
@@ -61,6 +62,9 @@ export async function JoinBetaContent({
     </Message>
   );
   if (!token) return invalid;
+
+  // getSignupStatus reads the clock (cooldown countdown): request time only.
+  await connection();
 
   let status;
   try {

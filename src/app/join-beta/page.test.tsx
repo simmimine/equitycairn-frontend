@@ -2,11 +2,21 @@ import { cleanup, render, screen } from "@testing-library/react";
 import { Suspense } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-const { getSignupStatus, resendVerification } = vi.hoisted(() => ({
-  getSignupStatus: vi.fn(),
-  resendVerification: vi.fn(),
-}));
+const { getSignupStatus, resendVerification, connection, calls } = vi.hoisted(
+  () => {
+    const calls: string[] = [];
+    return {
+      calls,
+      getSignupStatus: vi.fn(),
+      resendVerification: vi.fn(),
+      connection: vi.fn(async () => {
+        calls.push("connection");
+      }),
+    };
+  },
+);
 vi.mock("@/lib/signup/store", () => ({ getSignupStatus }));
+vi.mock("next/server", () => ({ connection }));
 vi.mock("@/app/actions/resend-verification", () => ({ resendVerification }));
 
 import { JoinBetaContent } from "./join-beta-content";
@@ -24,11 +34,28 @@ async function renderPage(token: string | string[] | undefined) {
 describe("/join-beta", () => {
   beforeEach(() => {
     getSignupStatus.mockReset();
+    getSignupStatus.mockImplementation(async () => {
+      calls.push("getSignupStatus");
+      return { cooldownRemainingSeconds: 30 };
+    });
+    connection.mockClear();
+    calls.length = 0;
     vi.spyOn(console, "error").mockImplementation(() => {});
   });
   afterEach(() => {
     cleanup();
     vi.restoreAllMocks();
+  });
+
+  it("waits for a real request (connection) before the store call that reads the clock", async () => {
+    await renderPage(TOKEN);
+    expect(calls).toEqual(["connection", "getSignupStatus"]);
+  });
+
+  it("does not need a request-time connection when the token is invalid", async () => {
+    await renderPage("junk");
+    expect(connection).not.toHaveBeenCalled();
+    expect(getSignupStatus).not.toHaveBeenCalled();
   });
 
   it("wraps the request-time content in Suspense (cacheComponents)", () => {
