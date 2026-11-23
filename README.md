@@ -65,6 +65,14 @@ Only verified beta members can create an account (see `docs/superpowers/specs/20
 - In the Supabase dashboard (Authentication): **disable "Allow new users to sign up"** (accounts are created only by the server with the secret key) and keep **"Confirm email" on**.
 - The confirmation link asks for the password again before confirming; this prevents someone pre-registering a member's address with a password they know.
 
+### Manual check (needs real keys; the Resend test sender only mails the Resend account's own address)
+
+1. Sign up on the landing page with that address and verify it.
+2. `/login`: enter it, create a password, open the emailed link, enter the same password, finish onboarding, land on `/feed`.
+3. Sign out and back in; you should go straight to `/feed`.
+4. An address that is not on the list, and one that is listed but unverified, each get their own message on `/login`.
+5. Open the confirm link and enter a wrong password: it must not confirm.
+
 ## Docker / Cloud Run
 
 ```sh

@@ -107,10 +107,18 @@ describe("writes", () => {
     });
   });
 
-  it("saveWatchlist adds the new tickers then removes the others", async () => {
+  it("saveWatchlist removes dropped tickers before adding, so a full list can be swapped", async () => {
     await saveWatchlist(UID, ["AAPL", "MSFT"]);
     const methods = calls.filter((c) => c.table === "watchlist_items");
-    expect(methods[0]).toEqual({
+    expect(methods.map((c) => c.method).indexOf("delete")).toBeLessThan(
+      methods.map((c) => c.method).indexOf("upsert"),
+    );
+    expect(methods).toContainEqual({
+      table: "watchlist_items",
+      method: "not",
+      args: ["ticker", "in", "(AAPL,MSFT)"],
+    });
+    expect(methods).toContainEqual({
       table: "watchlist_items",
       method: "upsert",
       args: [
@@ -120,12 +128,6 @@ describe("writes", () => {
         ],
         { onConflict: "user_id,ticker", ignoreDuplicates: true },
       ],
-    });
-    expect(methods.map((c) => c.method)).toContain("delete");
-    expect(methods).toContainEqual({
-      table: "watchlist_items",
-      method: "not",
-      args: ["ticker", "in", "(AAPL,MSFT)"],
     });
   });
 

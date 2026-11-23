@@ -141,6 +141,13 @@ security invoker
 set search_path = ''
 as $$
 begin
+  -- A ticker already on the list is a no-op (upsert ... do nothing): never counts against the cap.
+  if exists (
+    select 1 from public.watchlist_items w
+    where w.user_id = new.user_id and w.ticker = new.ticker
+  ) then
+    return new;
+  end if;
   if (select count(*) from public.watchlist_items w where w.user_id = new.user_id) >= 50 then
     raise exception 'watchlist is limited to 50 companies';
   end if;

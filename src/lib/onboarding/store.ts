@@ -72,16 +72,12 @@ export async function saveAbout(
   check("save about", error);
 }
 
-/** Replaces the user's watchlist: add the new tickers first, then drop the rest. */
+/**
+ * Replaces the user's watchlist. Dropped tickers go first so swapping a full
+ * list never trips the 50-item cap; then the new ones are added.
+ */
 export async function saveWatchlist(userId: string, tickers: string[]) {
   const db = await createSessionClient();
-  if (tickers.length > 0) {
-    const added = await db.from("watchlist_items").upsert(
-      tickers.map((ticker) => ({ user_id: userId, ticker })),
-      { onConflict: "user_id,ticker", ignoreDuplicates: true },
-    );
-    check("add watchlist", added.error);
-  }
   let removal = db.from("watchlist_items").delete().eq("user_id", userId);
   if (tickers.length > 0) {
     // Tickers are validated to [A-Z.]{1,6}, so the list is safe to inline.
@@ -89,6 +85,14 @@ export async function saveWatchlist(userId: string, tickers: string[]) {
   }
   const removed = await removal;
   check("trim watchlist", removed.error);
+
+  if (tickers.length > 0) {
+    const added = await db.from("watchlist_items").upsert(
+      tickers.map((ticker) => ({ user_id: userId, ticker })),
+      { onConflict: "user_id,ticker", ignoreDuplicates: true },
+    );
+    check("add watchlist", added.error);
+  }
 }
 
 export async function markOnboarded(userId: string) {
