@@ -367,4 +367,32 @@ describe("OnboardingFlow · failures", () => {
     await user.click(cont());
     expect(saveAboutAction).toHaveBeenCalledWith("other", "");
   });
+
+  it("Skip keeps the chosen answers when the save fails", async () => {
+    saveAboutAction.mockResolvedValue({ ok: false, error: "server_error" });
+    const user = userEvent.setup();
+    render(
+      <OnboardingFlow
+        initial={{ ...NAMED, role: "other", experience: "beginner" }}
+        startStep="about"
+      />,
+    );
+    await user.click(screen.getByRole("button", { name: /skip for now/i }));
+    expect(
+      await screen.findByText(/something went wrong/i),
+    ).toBeInTheDocument();
+    expect(screen.getByRole("radio", { name: "Other" })).toBeChecked();
+    expect(screen.getByRole("radio", { name: "Beginner" })).toBeChecked();
+  });
+
+  it("shows the spinner on the control that was clicked, not on Continue", async () => {
+    finishOnboardingAction.mockReturnValue(new Promise(() => {}));
+    const user = userEvent.setup();
+    render(<OnboardingFlow initial={NAMED} startStep="watchlist" />);
+    await user.click(screen.getByRole("button", { name: /do this later/i }));
+    expect(
+      screen.getByRole("button", { name: /do this later/i }),
+    ).toHaveAttribute("aria-busy", "true");
+    expect(cont()).toHaveAttribute("aria-busy", "false");
+  });
 });

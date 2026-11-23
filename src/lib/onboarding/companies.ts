@@ -113,8 +113,12 @@ export function tickerCandidate(
   query: string,
   selected: readonly string[],
 ): string | null {
-  const t = query.trim().toUpperCase();
+  const raw = query.trim();
+  const t = raw.toUpperCase();
   if (!TICKER_LIKE.test(t)) return null;
+  // Typed in lower case, only short input reads as a symbol ("tsla"); longer words
+  // ("tesla", "netflix") are company names that aren't in the starter list.
+  if (raw !== t && raw.length > 4) return null;
   if (selected.includes(t)) return null;
   // A word that names a company ("apple", "micro") is a search, not a ticker, and adding it
   // would save junk. Short queries ("F", "GE") are too ambiguous to rule out: real tickers.

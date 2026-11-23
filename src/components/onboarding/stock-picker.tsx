@@ -52,15 +52,11 @@ export function StockPicker({
   const candidate =
     category === "All" ? tickerCandidate(query, selected) : null;
   // Tickers added by hand (or saved earlier) have no card in the popular list, and the
-  // watchlist panel is desktop-only, so show them here where they can be unchecked.
+  // watchlist panel is desktop-only, so show them here (under any category) to uncheck.
   const q = query.trim().toUpperCase();
-  const custom =
-    category === "All"
-      ? selected.filter(
-          (t) =>
-            !POPULAR_COMPANIES.some((c) => c.ticker === t) && t.includes(q),
-        )
-      : [];
+  const custom = selected.filter(
+    (t) => !POPULAR_COMPANIES.some((c) => c.ticker === t) && t.includes(q),
+  );
 
   return (
     <div className="flex flex-col gap-5">

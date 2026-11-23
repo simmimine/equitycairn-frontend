@@ -105,10 +105,12 @@ function SkipLink({
   label,
   onClick,
   disabled,
+  busy,
 }: {
   label: string;
   onClick: () => void;
   disabled: boolean;
+  busy: boolean;
 }) {
   return (
     <Button
@@ -116,8 +118,10 @@ function SkipLink({
       variant="link"
       onClick={onClick}
       disabled={disabled}
+      aria-busy={busy}
       className="text-primary"
     >
+      {busy && <Spinner data-icon="inline-start" aria-hidden="true" />}
       {label}
     </Button>
   );
@@ -170,6 +174,8 @@ export function OnboardingFlow({
   const router = useRouter();
   // `pending` only flips on the next render, so a fast double click would slip past it.
   const inFlight = useRef(false);
+  // Which control started the work, so only that one shows the spinner.
+  const [busyBy, setBusyBy] = useState<"primary" | "skip">("primary");
 
   const index = STEPS.indexOf(step);
   const go = (next: OnboardingStep) => {
@@ -182,9 +188,11 @@ export function OnboardingFlow({
   function run(
     step: OnboardingStep,
     work: () => Promise<OnboardingResult | null>,
+    source: "primary" | "skip" = "primary",
   ) {
     if (pending || inFlight.current) return;
     inFlight.current = true;
+    setBusyBy(source);
     setError(null);
     startTransition(async () => {
       try {
@@ -205,12 +213,20 @@ export function OnboardingFlow({
   function submit(
     action: () => Promise<OnboardingResult>,
     next: OnboardingStep,
+    opts: { source?: "primary" | "skip"; onOk?: () => void } = {},
   ) {
-    run(step, async () => {
-      const result = await action();
-      if (result.ok) setStep(next);
-      return result;
-    });
+    run(
+      step,
+      async () => {
+        const result = await action();
+        if (result.ok) {
+          opts.onOk?.();
+          setStep(next);
+        }
+        return result;
+      },
+      opts.source,
+    );
   }
 
   function finish(save: boolean) {
@@ -220,13 +236,17 @@ export function OnboardingFlow({
       );
       return;
     }
-    run("watchlist", async () => {
-      if (save) {
-        const saved = await actions.saveWatchlist(picks.join(" "));
-        if (!saved.ok) return saved;
-      }
-      return actions.finish();
-    });
+    run(
+      "watchlist",
+      async () => {
+        if (save) {
+          const saved = await actions.saveWatchlist(picks.join(" "));
+          if (!saved.ok) return saved;
+        }
+        return actions.finish();
+      },
+      save ? "primary" : "skip",
+    );
   }
 
   function toggle(ticker: string) {
@@ -243,7 +263,7 @@ export function OnboardingFlow({
       className="absolute right-4"
     />
   );
-  const spinner = pending && (
+  const spinner = pending && busyBy === "primary" && (
     <Spinner data-icon="inline-start" aria-hidden="true" />
   );
   const linkClass = "text-primary";
@@ -266,7 +286,7 @@ export function OnboardingFlow({
       type="submit"
       form={FORM_ID}
       disabled={pending}
-      aria-busy={pending}
+      aria-busy={pending && busyBy === "primary"}
       className={primaryClass}
     >
       {spinner}
@@ -391,11 +411,17 @@ export function OnboardingFlow({
         <SkipLink
           label="Skip for now"
           disabled={pending}
-          onClick={() => {
-            setRole("");
-            setExperience("");
-            submit(() => actions.saveAbout("", ""), "welcome");
-          }}
+          busy={pending && busyBy === "skip"}
+          onClick={() =>
+            submit(() => actions.saveAbout("", ""), "welcome", {
+              source: "skip",
+              // Only wipe the answers once the save worked, so a failure keeps them.
+              onOk: () => {
+                setRole("");
+                setExperience("");
+              },
+            })
+          }
         />
       </>
     );
@@ -497,6 +523,7 @@ export function OnboardingFlow({
         <SkipLink
           label="I’ll do this later"
           disabled={pending}
+          busy={pending && busyBy === "skip"}
           onClick={() => finish(false)}
         />
       </>

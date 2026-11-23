@@ -140,4 +140,12 @@ describe("StockPicker", () => {
     expect(onToggle).toHaveBeenCalledWith("TSLA");
     expect(screen.getByRole("searchbox")).toHaveValue("tsla");
   });
+
+  it("keeps custom tickers visible under a category filter", async () => {
+    const { user } = setup(["ZZZZ"]);
+    await user.click(screen.getByRole("button", { name: "Finance" }));
+    expect(
+      screen.getByRole("checkbox", { name: "ZZZZ (custom ticker)" }),
+    ).toBeInTheDocument();
+  });
 });

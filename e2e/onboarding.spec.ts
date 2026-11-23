@@ -471,4 +471,27 @@ test.describe("edge cases", () => {
       { action: "saveAbout", args: ["other", ""] },
     ]);
   });
+
+  test("a company name outside the list is not offered as a ticker", async ({
+    page,
+  }) => {
+    await open(page, "?step=watchlist");
+    await page
+      .getByRole("searchbox", { name: "Search companies" })
+      .fill("tesla");
+    await expect(page.getByRole("button", { name: /^Add “/ })).toHaveCount(0);
+    await page.keyboard.press("Enter");
+    await expect(page.getByText("0 selected")).toBeVisible();
+  });
+
+  test("custom tickers stay visible and removable under a category filter", async ({
+    page,
+  }) => {
+    await open(page, "?step=watchlist&tickers=ZZZZ");
+    await page.getByRole("button", { name: "Finance" }).click();
+    await page
+      .getByRole("checkbox", { name: "ZZZZ (custom ticker)" })
+      .uncheck();
+    await expect(page.getByText("0 selected")).toBeVisible();
+  });
 });

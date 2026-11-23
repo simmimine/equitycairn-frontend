@@ -59,7 +59,8 @@ describe("filterCompanies", () => {
 describe("tickerCandidate", () => {
   it("offers an uppercase ticker for ticker-like text not in the list", () => {
     expect(tickerCandidate("zzzz", [])).toBe("ZZZZ");
-    expect(tickerCandidate(" brk.b ", [])).toBe("BRK.B");
+    expect(tickerCandidate(" BRK.B ", [])).toBe("BRK.B");
+    expect(tickerCandidate("TESLA", [])).toBe("TESLA");
   });
 
   it("still offers short tickers that merely appear inside company names", () => {
@@ -74,6 +75,8 @@ describe("tickerCandidate", () => {
     expect(tickerCandidate("msft", [])).toBeNull();
     expect(tickerCandidate("zzzz", ["ZZZZ"])).toBeNull();
     expect(tickerCandidate("abcdefg", [])).toBeNull();
+    expect(tickerCandidate("tesla", [])).toBeNull();
+    expect(tickerCandidate("brk.b", [])).toBeNull();
     expect(tickerCandidate("ab1", [])).toBeNull();
     expect(tickerCandidate("two words", [])).toBeNull();
     expect(tickerCandidate("", [])).toBeNull();
