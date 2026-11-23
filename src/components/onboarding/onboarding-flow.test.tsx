@@ -395,4 +395,13 @@ describe("OnboardingFlow · failures", () => {
     ).toHaveAttribute("aria-busy", "true");
     expect(cont()).toHaveAttribute("aria-busy", "false");
   });
+
+  it("explains a finish that fails because no name was saved", async () => {
+    finishOnboardingAction.mockResolvedValue({ ok: false, error: "invalid" });
+    const user = userEvent.setup();
+    render(<OnboardingFlow initial={NAMED} startStep="watchlist" />);
+    await user.click(screen.getByRole("button", { name: /do this later/i }));
+    expect(await screen.findByText(/add your name first/i)).toBeInTheDocument();
+    expect(screen.queryByText(/one to six letters/i)).toBeNull();
+  });
 });

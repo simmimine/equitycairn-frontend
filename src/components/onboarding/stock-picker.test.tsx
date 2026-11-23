@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
 
@@ -147,5 +147,25 @@ describe("StockPicker", () => {
     expect(
       screen.getByRole("checkbox", { name: "ZZZZ (custom ticker)" }),
     ).toBeInTheDocument();
+  });
+
+  it("does not offer an Add button for a listed ticker, even a short one", async () => {
+    const { user } = setup();
+    await user.type(screen.getByRole("searchbox"), "ko");
+    expect(screen.queryByRole("button", { name: /add “/i })).toBeNull();
+    expect(
+      screen.getByRole("checkbox", { name: /coca-cola/i }),
+    ).toBeInTheDocument();
+  });
+
+  it("ignores Enter while an IME composition is active", () => {
+    const onToggle = vi.fn();
+    render(<StockPicker selected={[]} limited={false} onToggle={onToggle} />);
+    const box = screen.getByRole("searchbox");
+    fireEvent.change(box, { target: { value: "zz" } });
+    fireEvent.keyDown(box, { key: "Enter", isComposing: true });
+    expect(onToggle).not.toHaveBeenCalled();
+    fireEvent.keyDown(box, { key: "Enter" });
+    expect(onToggle).toHaveBeenCalledWith("ZZ");
   });
 });

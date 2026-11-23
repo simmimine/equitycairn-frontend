@@ -86,7 +86,7 @@ function errorText(
     return "Use letters, spaces, apostrophes, hyphens or periods (up to 60 characters).";
   }
   if (result.error === "invalid" && step === "watchlist") {
-    return "Tickers are one to six letters, separated by spaces or commas.";
+    return "Tickers are one to six letters (a dot is allowed), separated by spaces or commas.";
   }
   if (result.error === "too_many") return "You can follow up to 50 companies.";
   if (result.error === "already_onboarded") {
@@ -243,7 +243,13 @@ export function OnboardingFlow({
           const saved = await actions.saveWatchlist(picks.join(" "));
           if (!saved.ok) return saved;
         }
-        return actions.finish();
+        const done = await actions.finish();
+        if (!done.ok && done.error === "invalid") {
+          // finish() has no input; "invalid" there means the profile has no name yet.
+          setError("Please go back and add your name first.");
+          return null;
+        }
+        return done;
       },
       save ? "primary" : "skip",
     );

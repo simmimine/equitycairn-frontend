@@ -74,7 +74,7 @@ export function StockPicker({
           onKeyDown={(e) => {
             // Enter in the search box must never submit the onboarding form
             // (that would finish onboarding); use it to add the offered ticker.
-            if (e.key !== "Enter") return;
+            if (e.key !== "Enter" || e.nativeEvent.isComposing) return;
             e.preventDefault();
             if (candidate) addCandidate(candidate);
           }}

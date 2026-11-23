@@ -60,6 +60,7 @@ describe("tickerCandidate", () => {
   it("offers an uppercase ticker for ticker-like text not in the list", () => {
     expect(tickerCandidate("zzzz", [])).toBe("ZZZZ");
     expect(tickerCandidate(" BRK.B ", [])).toBe("BRK.B");
+    expect(tickerCandidate("brk.b", [])).toBe("BRK.B");
     expect(tickerCandidate("TESLA", [])).toBe("TESLA");
   });
 
@@ -76,7 +77,12 @@ describe("tickerCandidate", () => {
     expect(tickerCandidate("zzzz", ["ZZZZ"])).toBeNull();
     expect(tickerCandidate("abcdefg", [])).toBeNull();
     expect(tickerCandidate("tesla", [])).toBeNull();
-    expect(tickerCandidate("brk.b", [])).toBeNull();
+    expect(tickerCandidate(".", [])).toBeNull();
+    expect(tickerCandidate("...", [])).toBeNull();
+    expect(tickerCandidate(".a", [])).toBeNull();
+    expect(tickerCandidate("a.", [])).toBeNull();
+    expect(tickerCandidate("a.b.c", [])).toBeNull();
+    expect(tickerCandidate("ko", [])).toBeNull();
     expect(tickerCandidate("ab1", [])).toBeNull();
     expect(tickerCandidate("two words", [])).toBeNull();
     expect(tickerCandidate("", [])).toBeNull();

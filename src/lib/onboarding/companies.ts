@@ -95,7 +95,8 @@ export const POPULAR_COMPANIES: Company[] = [
 /** Design: "3 / 10". The server's own cap (MAX_WATCHLIST) stays as a backstop. */
 export const MAX_PICKS = 10;
 
-const TICKER_LIKE = /^[A-Z.]{1,6}$/;
+// Letters with at most one inner dot ("BRK.B"); never just dots.
+const TICKER_LIKE = /^(?=.{1,6}$)[A-Z]+(\.[A-Z]+)?$/;
 
 export function filterCompanies(query: string, category: Category): Company[] {
   const q = query.trim().toLowerCase();
@@ -118,10 +119,11 @@ export function tickerCandidate(
   if (!TICKER_LIKE.test(t)) return null;
   // Typed in lower case, only short input reads as a symbol ("tsla"); longer words
   // ("tesla", "netflix") are company names that aren't in the starter list.
-  if (raw !== t && raw.length > 4) return null;
+  if (raw !== t && raw.length > 4 && !raw.includes(".")) return null;
   if (selected.includes(t)) return null;
   // A word that names a company ("apple", "micro") is a search, not a ticker, and adding it
   // would save junk. Short queries ("F", "GE") are too ambiguous to rule out: real tickers.
+  if (POPULAR_COMPANIES.some((c) => c.ticker === t)) return null;
   if (t.length >= 3 && filterCompanies(t, "All").length > 0) return null;
   return t;
 }
