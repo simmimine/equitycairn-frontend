@@ -5,6 +5,12 @@ import { expect, test, type Page } from "@playwright/test";
 
 type Call = { action: string; args: unknown[] };
 
+declare global {
+  interface Window {
+    __onboardingCalls?: Call[];
+  }
+}
+
 async function open(page: Page, query = "") {
   const response = await page.goto(`/e2e-onboarding${query}`);
   if (response?.status() === 404) {
@@ -14,10 +20,11 @@ async function open(page: Page, query = "") {
     );
   }
   await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
+  await expect(page.locator("body[data-hydrated]")).toBeAttached();
 }
 
 async function calls(page: Page): Promise<Call[]> {
-  return JSON.parse((await page.getByTestId("calls").textContent()) ?? "[]");
+  return page.evaluate(() => window.__onboardingCalls ?? []);
 }
 
 /** Pick a pill card the way a user does: click its visible label. */
@@ -401,8 +408,11 @@ test.describe("layout", () => {
   });
 
   test("uses the dark theme tokens", async ({ page }) => {
+    // The theme follows the system setting, so ask for dark the way a user's OS would
+    // (adding the class by hand races next-themes' own hydration).
+    await page.emulateMedia({ colorScheme: "dark" });
     await open(page, "?step=about");
-    await page.evaluate(() => document.documentElement.classList.add("dark"));
+    await expect(page.locator("html")).toHaveClass(/dark/);
     await expect(page.locator("body")).toHaveCSS(
       "background-color",
       "rgb(7, 31, 34)",

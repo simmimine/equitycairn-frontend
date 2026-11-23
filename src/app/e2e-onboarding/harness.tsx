@@ -1,6 +1,13 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+
+declare global {
+  interface Window {
+    /** Every fake action call, in order. Read by e2e/onboarding.spec.ts. */
+    __onboardingCalls?: Call[];
+  }
+}
 
 import {
   OnboardingFlow,
@@ -22,12 +29,19 @@ export function OnboardingHarness({
   fail: string;
   delayMs: number;
 }) {
-  const [calls, setCalls] = useState<Call[]>([]);
   const [done, setDone] = useState(false);
+
+  // Specs wait for this before interacting: the server-rendered HTML is visible well
+  // before React hydrates, and an early click would submit the form natively.
+  useEffect(() => {
+    document.body.dataset.hydrated = "true";
+  }, []);
 
   const actions = useMemo<OnboardingActions>(() => {
     const run = async (action: string, args: unknown[], onOk?: () => void) => {
-      setCalls((c) => [...c, { action, args }]);
+      // Recorded synchronously, outside React state: state set inside the flow's
+      // transition can commit after the UI has already moved on, which made specs racy.
+      (window.__onboardingCalls ??= []).push({ action, args });
       if (delayMs) await new Promise((r) => setTimeout(r, delayMs));
       if (fail === action) {
         // "finish" has no input to be invalid; it fails like a server fault.
@@ -62,9 +76,6 @@ export function OnboardingHarness({
           }}
         />
       )}
-      <pre data-testid="calls" hidden>
-        {JSON.stringify(calls)}
-      </pre>
     </>
   );
 }

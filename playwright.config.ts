@@ -4,6 +4,10 @@ const port = Number(process.env.E2E_PORT) || 3100;
 
 export default defineConfig({
   testDir: "./e2e",
+  // `next dev` compiles each route on its first request; do that once up front so
+  // specs never race a cold compile (see e2e/global-setup.ts).
+  globalSetup: "./e2e/global-setup.ts",
+  expect: { timeout: 10_000 },
   fullyParallel: true,
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 2 : 0,
