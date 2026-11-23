@@ -16,12 +16,13 @@ Cards on `/login`, one at a time:
    - **On the list, not verified** → "Verify your beta sign-up first" + a **Re-send verification** button (60 s cooldown, the existing mechanism, keyed by email).
    - **Verified, no account** → card 2a.
    - **Has an account** → card 2b.
-2. **2a. Create password:** password + confirm. Submitting creates an *unconfirmed* account and emails a confirmation link; the card becomes "Check your email" with a re-send button (60 s cooldown).
-2. **2b. Sign in:** password. Success → authed home.
-3. **Confirmation link** (`/auth/confirm?token_hash=…`): opens a page that asks the user to **re-enter the password they just created**, then confirms the account, signs them in, and sends them to onboarding. (Why: see "Pre-registration" below.)
-4. **Onboarding** (first sign-in only), then **authed home** (`/feed`).
+2. **2a. Create password:** password + confirm. Submitting creates an _unconfirmed_ account and emails a confirmation link; the card becomes "Check your email" with a re-send button (60 s cooldown).
+3. **2b. Sign in:** password. Success → authed home.
+4. **Confirmation link** (`/auth/confirm?token_hash=…`): opens a page that asks the user to **re-enter the password they just created**, then confirms the account, signs them in, and sends them to onboarding. (Why: see "Pre-registration" below.)
+5. **Onboarding** (first sign-in only), then **authed home** (`/feed`).
 
 Onboarding (Notion MVP, steps 1–4), one card each, Back allowed:
+
 1. **Name** — first and last name, length-limited and validated (letters, spaces, `' - .`, 1–60 chars), always rendered as text, never as HTML.
 2. **About you** — Role (Retail investor / Institutional investor / Researcher or analyst / Financial adviser or wealth professional / Other) and Experience (Beginner / Intermediate / Experienced). Both optional; "Prefer not to say"/Skip on each. Editable later (settings page is out of scope; the data model supports it).
 3. **Welcome** — what EquityCairn is: it organizes company news and links to publishers; no "all news" or "real-time" claims.
@@ -84,7 +85,7 @@ Also decided: **membership is revealed** (clear messages on the email card) rath
 
 - **`checkEmail(email)`** (server action): honeypot and email validation as before; IP throttle; looks up `beta_signups` and the Supabase user (admin API). Returns `not_listed | unverified | no_account | has_account` or `rate_limited`. Sends nothing.
 - **`resendBetaVerification(email)`**: for `unverified` rows only; reuses the existing verify-token issuing and cooldown logic, keyed by email; same 60 s server-enforced cooldown, client countdown is display only.
-- **`createAccount(email, password, confirm)`**: re-checks `verified` membership server-side (never trusts the card state); validates the password (length 12–72, must match confirm; no composition rules; reject a short denylist of the most common passwords); creates the unconfirmed user with the secret key and generates a confirmation token; emails the link `${SITE_URL}/auth/confirm?token_hash=…` through the Resend module in `after()`. If an *unconfirmed* account for the email already exists, it is replaced (new password, new token) subject to the 60 s cooldown — nobody has proven the inbox yet. If a *confirmed* account exists, return `has_account`.
+- **`createAccount(email, password, confirm)`**: re-checks `verified` membership server-side (never trusts the card state); validates the password (length 12–72, must match confirm; no composition rules; reject a short denylist of the most common passwords); creates the unconfirmed user with the secret key and generates a confirmation token; emails the link `${SITE_URL}/auth/confirm?token_hash=…` through the Resend module in `after()`. If an _unconfirmed_ account for the email already exists, it is replaced (new password, new token) subject to the 60 s cooldown — nobody has proven the inbox yet. If a _confirmed_ account exists, return `has_account`.
 - **`/auth/confirm` (page + action):** `GET` renders only a form (token in a hidden field) — opening the link changes nothing. The submit takes the password; the server first verifies the password against the pending account (without creating a session), and only then verifies the token and confirms the account; then signs the user in and redirects to `/onboarding`. Wrong password → generic "That doesn't match the password you created", with a small attempt cap; expired/used token → "Link expired" with a path back to `/login`.
 - **`signIn(email, password)`**: IP throttle; Supabase password sign-in; session cookies set via `@supabase/ssr` (new dependency; sets HttpOnly, Secure-in-production, SameSite=Lax cookies); error text is generic ("Email or password is incorrect").
 - **`signOut`**: server action, clears the session, redirects to `/`.
@@ -95,7 +96,7 @@ Also decided: **membership is revealed** (clear messages on the email card) rath
 
 ### Pre-registration (why the confirm page asks for the password)
 
-Because a stranger can type a member's email on card 2a and choose the password, simply confirming the account when the member clicks the mail would hand the stranger a confirmed account. Requiring the **password to be re-entered on the confirm page** means confirmation needs both inbox access and knowledge of the password: the member can't complete it for an attacker's password, and the attacker can't read the mail. Pending, unconfirmed accounts can't sign in, expire after 48 h, and are cleaned up by the next `createAccount` for that email. *To be verified in a spike before building on it:* that Supabase distinguishes a wrong password from "email not confirmed" on an unconfirmed user (it checks the password first). If it doesn't, the builder falls back to storing a hash of the pending password in a small server-only table and comparing it before confirming.
+Because a stranger can type a member's email on card 2a and choose the password, simply confirming the account when the member clicks the mail would hand the stranger a confirmed account. Requiring the **password to be re-entered on the confirm page** means confirmation needs both inbox access and knowledge of the password: the member can't complete it for an attacker's password, and the attacker can't read the mail. Pending, unconfirmed accounts can't sign in, expire after 48 h, and are cleaned up by the next `createAccount` for that email. _To be verified in a spike before building on it:_ that Supabase distinguishes a wrong password from "email not confirmed" on an unconfirmed user (it checks the password first). If it doesn't, the builder falls back to storing a hash of the pending password in a small server-only table and comparing it before confirming.
 
 ### Configuration
 

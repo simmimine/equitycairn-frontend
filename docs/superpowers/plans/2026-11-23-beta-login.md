@@ -22,7 +22,7 @@
 
 ## Review Focus
 
-- Email with different case/whitespace than the beta list (`  Foo@X.com `) must resolve to the same member.
+- Email with different case/whitespace than the beta list (` Foo@X.com`) must resolve to the same member.
 - Password of exactly 11, 12, 72 and 73 characters; multi-byte characters.
 - `createAccount` called directly (bypassing the card) for a non-member or unverified member must be refused.
 - Confirm token reused, expired, or submitted with the wrong password must not confirm or sign in.
@@ -70,6 +70,7 @@
 **Files:** Create `src/lib/auth/password.ts`, `src/lib/onboarding/schema.ts`; Tests alongside (`*.test.ts`).
 
 **Produces:**
+
 - `validatePassword(password: unknown, confirm: unknown): { ok: true; password: string } | { ok: false; error: "too_short" | "too_long" | "mismatch" | "common" | "invalid" }`
 - `nameSchema` / `parseName(first: unknown, last: unknown): { ok: true; first: string; last: string } | { ok: false }`
 - `ROLES`, `EXPERIENCES` const arrays; `parseAbout(role: unknown, experience: unknown): { ok: true; role: Role | null; experience: Experience | null } | { ok: false }` (empty string / "skip" → null)
@@ -77,7 +78,7 @@
 
 - [ ] **Step 1: Tests** — `validatePassword`: 11 chars → `too_short`; 12 → ok; 72 → ok; 73 → `too_long`; 72-character multi-byte string measured in **bytes** (72 bytes max, bcrypt limit) → `too_long` when bytes > 72; mismatched confirm → `mismatch`; `"password1234"` → `common`; non-string → `invalid`. `parseName`: `"Ann-Marie O'Neil"` ok; `"<script>"` → not ok; 61 chars → not ok; trims. `parseAbout`: values outside enums → not ok; `""` → null. `parseTickers`: `"aapl, msft  tsla"` → `["AAPL","MSFT","TSLA"]`; duplicates removed; `"AAPL;DROP"` → invalid; 51 distinct → `too_many`; empty string → ok with `[]`.
 - [ ] **Step 2:** Run `pnpm vitest run src/lib/auth src/lib/onboarding` — fails.
-- [ ] **Step 3:** Implement with zod (as `email.ts` does); denylist is a small hard-coded `Set` of ≥ 20 common 12+ char passwords (lowercased compare). Note spec says 12–72 *characters*; use bytes for the max because bcrypt truncates at 72 bytes, and say so in a comment.
+- [ ] **Step 3:** Implement with zod (as `email.ts` does); denylist is a small hard-coded `Set` of ≥ 20 common 12+ char passwords (lowercased compare). Note spec says 12–72 _characters_; use bytes for the max because bcrypt truncates at 72 bytes, and say so in a comment.
 - [ ] **Step 4:** Tests pass. Commit `feat: password and onboarding validation`.
 
 ### Task 4: Email transport + confirm email
@@ -94,6 +95,7 @@
 **Files:** Modify `src/lib/signup/store.ts`, `store.test-helpers.ts` (fake must support `.select().eq()` by email, already similar); Create `src/lib/auth/attempts.ts`; Tests `store.test.ts` additions, `attempts.test.ts`.
 
 **Produces:**
+
 - `getBetaStatus(email: string): Promise<"not_listed" | "unverified" | "verified">` (email lowercased/trimmed).
 - `issueVerifyByEmail(email: string): Promise<{ status: "sent"; verifyToken: string } | { status: "cooldown"; retryAfterSeconds: number } | { status: "noop" }>` — reuses `issueVerifyToken("id", …)` via an email lookup; `noop` for not-listed and verified rows.
 - `checkAttempts(scope: "login-email" | "login-pw" | "confirm", clientKey: string, limit: { max: number; windowSeconds: number }): Promise<{ allowed: true } | { allowed: false; retryAfterSeconds: number }>` calling RPC `bump_attempts` with key `${scope}:${clientKey}`.
@@ -106,6 +108,7 @@
 **Files:** Create `src/lib/auth/accounts.ts`, `src/lib/auth/session.ts`, `src/proxy.ts`; Tests `accounts.test.ts` (mock `getSupabaseAdmin` and the anon client factory).
 
 **Produces (`accounts.ts`, server-only):**
+
 - `getAccountState(email: string): Promise<"none" | "unconfirmed" | "confirmed">` (RPC `auth_user_state`).
 - `createPendingAccount(email: string, password: string): Promise<{ tokenHash: string } | { error: "exists_confirmed" | "failed" }>` — if an unconfirmed user exists, delete it first; then `admin.generateLink({ type: "signup", email, password })` and return `properties.hashed_token`.
 - `passwordMatchesPending(email: string, password: string): Promise<boolean>` — stateless anon client `signInWithPassword`; error code `email_not_confirmed` ⇒ true; anything else ⇒ false. **Spike:** verify this against the live project when migrations are applied; if Supabase doesn't distinguish, fall back per spec and note it.
@@ -152,6 +155,7 @@
 **Files:** Create `src/lib/onboarding/store.ts`, `src/app/actions/onboarding.ts`, `src/app/onboarding/page.tsx`, `src/components/onboarding/onboarding-flow.tsx`, `src/app/feed/page.tsx`; Tests for each.
 
 **Produces:**
+
 - `store.ts` (uses `createSessionClient`, RLS): `getProfile(): Promise<{ firstName: string|null; lastName: string|null; role: Role|null; experience: Experience|null; onboardedAt: string|null; tickers: string[] } | null>`; `saveName`, `saveAbout`, `saveWatchlist(tickers: string[])` (replace set), `markOnboarded()`.
 - Actions (each re-checks `getUser()`; returns `{ ok: true } | { ok: false; error: "unauthenticated" | "invalid" | "too_many" | "server_error" }`; none write once `onboardedAt` is set except none — completed users are redirected): `saveNameAction(first, last)`, `saveAboutAction(role, experience)`, `saveWatchlistAction(input: string)`, `finishOnboardingAction()` (redirects to `/feed`).
 - `/onboarding`: `requireUser()`; redirect to `/feed` if onboarded; resume at first incomplete step; cards Name → About (each with Skip/"Prefer not to say") → Welcome → Watchlist (Skip allowed) with Back. `/feed`: `requireUser()`; redirect to `/onboarding` if not onboarded; shows "News for your watchlist", the tickers, an empty state with "Add companies" (links to nothing yet — disabled with "Coming soon"), and a Sign out button (form with `signOut`).

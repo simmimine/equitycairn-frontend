@@ -7,12 +7,14 @@ import { redirect } from "next/navigation";
 
 /** Supabase client bound to the request's session cookies (RLS applies as the user). */
 export async function createSessionClient(): Promise<SupabaseClient> {
+  // Read the request first: this makes the route dynamic, so `next build` never
+  // prerenders it (and never needs the env vars below).
+  const store = await cookies();
   const url = process.env.SUPABASE_URL;
   const key = process.env.SUPABASE_PUBLISHABLE_KEY;
   if (!url || !key) {
     throw new Error("Missing SUPABASE_URL or SUPABASE_PUBLISHABLE_KEY");
   }
-  const store = await cookies();
   return createServerClient(url, key, {
     cookies: {
       getAll: () => store.getAll(),
