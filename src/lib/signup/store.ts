@@ -54,14 +54,14 @@ export async function checkSignupRateLimit(
 
 /**
  * Atomically rotate the verify token on the row matched by `column = hash`,
- * only if it is unverified and out of cooldown. Returns the raw token, or
- * null if no row qualified.
+ * only if it is unverified and out of cooldown. Returns the raw token and the
+ * row's address, or null if no row qualified.
  */
 async function issueVerifyToken(
   column: "manage_token_hash" | "id",
   value: string | number,
   now: Date,
-): Promise<string | null> {
+): Promise<{ raw: string; email: string } | null> {
   const { token, fields } = verifyFields(now);
   const { data, error } = await getSupabaseAdmin()
     .from(TABLE)
@@ -71,9 +71,10 @@ async function issueVerifyToken(
     .or(
       `last_email_sent_at.is.null,last_email_sent_at.lte.${cooldownCutoff(now)}`,
     )
-    .select("id");
+    .select("id,email");
   if (error) fail("issue verify token", error);
-  return Array.isArray(data) && data.length === 1 ? token.raw : null;
+  if (!Array.isArray(data) || data.length !== 1) return null;
+  return { raw: token.raw, email: String(data[0].email) };
 }
 
 /**
@@ -137,7 +138,8 @@ export async function registerSignup(
     fail("rotate manage token", { message: "row not found" });
   }
 
-  const verifyToken = await issueVerifyToken("id", id, now);
+  const issued = await issueVerifyToken("id", id, now);
+  const verifyToken = issued?.raw ?? null;
   // A verified row never gets a token, but its cooldown must behave exactly
   // like an unverified row's so timing does not reveal verification state.
   if (!verifyToken) await bumpCooldown("id", id, now);
@@ -175,15 +177,17 @@ export async function getSignupStatus(
 export async function issueResend(
   rawManageToken: string,
 ): Promise<
-  | { status: "sent"; verifyToken: string }
+  | { status: "sent"; verifyToken: string; email: string }
   | { status: "cooldown"; retryAfterSeconds: number }
   | { status: "noop" }
   | { status: "invalid" }
 > {
   const hash = hashToken(rawManageToken);
   const now = new Date();
-  const verifyToken = await issueVerifyToken("manage_token_hash", hash, now);
-  if (verifyToken) return { status: "sent", verifyToken };
+  const issued = await issueVerifyToken("manage_token_hash", hash, now);
+  if (issued) {
+    return { status: "sent", verifyToken: issued.raw, email: issued.email };
+  }
 
   const row = await findByManageHash(hash);
   if (!row) return { status: "invalid" };

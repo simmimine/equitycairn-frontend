@@ -97,6 +97,21 @@ describe("SignupForm", () => {
     ).toBeInTheDocument();
   });
 
+  it("shows a wait message on rate_limited", async () => {
+    joinBeta.mockResolvedValue({
+      ok: false,
+      error: "rate_limited",
+      retryAfterSeconds: 30,
+    } satisfies JoinBetaResult);
+    const { user } = setup();
+    await user.type(screen.getByLabelText(/email/i), "a@b.co");
+    await user.click(screen.getByRole("button"));
+
+    expect(
+      await screen.findByText("Please wait a minute before trying again"),
+    ).toBeInTheDocument();
+  });
+
   it("keeps the typed email after a server error", async () => {
     joinBeta.mockResolvedValue({
       ok: false,

@@ -228,6 +228,7 @@ describe("issueResend", () => {
     expect(res.status).toBe("sent");
     if (res.status !== "sent") throw new Error("unreachable");
     expect(res.verifyToken).not.toBe(r.verifyToken);
+    expect(res.email).toBe("ann@example.com");
     expect(db.rows[0].verify_token_hash).toBe(hashToken(res.verifyToken));
     expect(db.rows[0].last_email_sent_at).toBe(new Date().toISOString());
     expect(JSON.stringify(db.rows)).not.toContain(res.verifyToken);

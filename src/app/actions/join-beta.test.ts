@@ -1,11 +1,23 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-const insert = vi.fn();
-const from = vi.fn(() => ({ insert }));
-const getSupabaseAdmin = vi.fn(() => ({ from }));
+const checkSignupRateLimit = vi.fn();
+const registerSignup = vi.fn();
+const sendVerificationEmail = vi.fn();
+const headersFn = vi.fn();
+const redirect = vi.fn((url: string) => {
+  throw new Error(`NEXT_REDIRECT:${url}`);
+});
 
-vi.mock("@/lib/supabase/server", () => ({
-  getSupabaseAdmin: () => getSupabaseAdmin(),
+vi.mock("@/lib/signup/store", () => ({
+  checkSignupRateLimit: (...a: unknown[]) => checkSignupRateLimit(...a),
+  registerSignup: (...a: unknown[]) => registerSignup(...a),
+}));
+vi.mock("@/lib/email/verification-email", () => ({
+  sendVerificationEmail: (...a: unknown[]) => sendVerificationEmail(...a),
+}));
+vi.mock("next/headers", () => ({ headers: () => headersFn() }));
+vi.mock("next/navigation", () => ({
+  redirect: (url: string) => redirect(url),
 }));
 
 import { HONEYPOT_FIELD } from "@/lib/signup/honeypot";
@@ -18,78 +30,166 @@ function form(fields: Record<string, string>) {
   return fd;
 }
 
+function captureConsole() {
+  return (["log", "warn", "error", "info", "debug"] as const).map((m) =>
+    vi.spyOn(console, m).mockImplementation(() => {}),
+  );
+}
+
 describe("joinBeta", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    insert.mockResolvedValue({ error: null });
-  });
-
-  it("inserts a valid email and returns ok", async () => {
-    const result = await joinBeta(null, form({ email: " Ann@Example.com " }));
-    expect(from).toHaveBeenCalledWith("beta_signups");
-    expect(insert).toHaveBeenCalledWith({
-      email: "ann@example.com",
-      source: "landing",
+    headersFn.mockResolvedValue(new Headers({ "x-forwarded-for": "1.2.3.4" }));
+    checkSignupRateLimit.mockResolvedValue({ allowed: true });
+    registerSignup.mockResolvedValue({
+      manageToken: "manage-raw",
+      verifyToken: "verify-raw",
     });
-    expect(result).toEqual({ ok: true });
+    sendVerificationEmail.mockResolvedValue(true);
   });
 
-  it("treats a duplicate (23505) as success", async () => {
-    insert.mockResolvedValue({ error: { code: "23505", message: "dup" } });
-    expect(await joinBeta(null, form({ email: "ann@example.com" }))).toEqual({
-      ok: true,
-    });
-  });
-
-  it("returns server_error for other errors without logging the email", async () => {
-    insert.mockResolvedValue({ error: { code: "XX000", message: "boom" } });
-    const spies = (["log", "warn", "error", "info"] as const).map((m) =>
-      vi.spyOn(console, m).mockImplementation(() => {}),
-    );
-    const result = await joinBeta(null, form({ email: "ann@example.com" }));
-    expect(result).toEqual({ ok: false, error: "server_error" });
-    for (const spy of spies) {
-      expect(JSON.stringify(spy.mock.calls)).not.toContain("ann@example.com");
-      spy.mockRestore();
-    }
-  });
-
-  it("rejects an invalid email without calling the client", async () => {
-    const result = await joinBeta(null, form({ email: "nope" }));
-    expect(result).toEqual({ ok: false, error: "invalid_email" });
-    expect(getSupabaseAdmin).not.toHaveBeenCalled();
-    expect(insert).not.toHaveBeenCalled();
-  });
-
-  it("silently succeeds when the honeypot is filled", async () => {
+  it("silently succeeds on honeypot without touching headers or store", async () => {
     const result = await joinBeta(
       null,
       form({ email: "ann@example.com", [HONEYPOT_FIELD]: "http://spam" }),
     );
     expect(result).toEqual({ ok: true });
-    expect(getSupabaseAdmin).not.toHaveBeenCalled();
-    expect(insert).not.toHaveBeenCalled();
+    expect(headersFn).not.toHaveBeenCalled();
+    expect(checkSignupRateLimit).not.toHaveBeenCalled();
+    expect(registerSignup).not.toHaveBeenCalled();
+    expect(sendVerificationEmail).not.toHaveBeenCalled();
   });
 
-  it("returns server_error when the client cannot be created", async () => {
-    getSupabaseAdmin.mockImplementationOnce(() => {
-      throw new Error("missing env");
+  it("rejects an invalid email without store calls", async () => {
+    const result = await joinBeta(null, form({ email: "nope" }));
+    expect(result).toEqual({ ok: false, error: "invalid_email" });
+    expect(checkSignupRateLimit).not.toHaveBeenCalled();
+    expect(registerSignup).not.toHaveBeenCalled();
+  });
+
+  it("returns rate_limited and does not register", async () => {
+    checkSignupRateLimit.mockResolvedValue({
+      allowed: false,
+      retryAfterSeconds: 42,
     });
+    const result = await joinBeta(null, form({ email: "ann@example.com" }));
+    expect(result).toEqual({
+      ok: false,
+      error: "rate_limited",
+      retryAfterSeconds: 42,
+    });
+    expect(registerSignup).not.toHaveBeenCalled();
+    expect(sendVerificationEmail).not.toHaveBeenCalled();
+  });
+
+  it("registers, emails the raw verify token, then redirects", async () => {
+    await expect(
+      joinBeta(null, form({ email: " Ann@Example.com " })),
+    ).rejects.toThrow("NEXT_REDIRECT:/join-beta?token=manage-raw");
+    expect(registerSignup).toHaveBeenCalledWith("ann@example.com");
+    expect(sendVerificationEmail).toHaveBeenCalledWith(
+      "ann@example.com",
+      "verify-raw",
+    );
+    expect(redirect).toHaveBeenCalledWith("/join-beta?token=manage-raw");
+  });
+
+  it("passes a hashed client key to the rate limiter", async () => {
+    await expect(
+      joinBeta(null, form({ email: "ann@example.com" })),
+    ).rejects.toThrow("NEXT_REDIRECT");
+    const key = checkSignupRateLimit.mock.calls[0][0] as string;
+    expect(key).toMatch(/^[0-9a-f]{64}$/);
+  });
+
+  it("URL-encodes the manage token in the redirect", async () => {
+    registerSignup.mockResolvedValue({
+      manageToken: "a b/c+d&e=f",
+      verifyToken: "v",
+    });
+    await expect(
+      joinBeta(null, form({ email: "ann@example.com" })),
+    ).rejects.toThrow("NEXT_REDIRECT");
+    expect(redirect).toHaveBeenCalledWith(
+      `/join-beta?token=${encodeURIComponent("a b/c+d&e=f")}`,
+    );
+  });
+
+  it("verified and new addresses produce the same redirect shape; null verify token sends no email", async () => {
+    registerSignup.mockResolvedValue({
+      manageToken: "manage-existing",
+      verifyToken: null,
+    });
+    await expect(
+      joinBeta(null, form({ email: "ann@example.com" })),
+    ).rejects.toThrow("NEXT_REDIRECT:/join-beta?token=manage-existing");
+    expect(sendVerificationEmail).not.toHaveBeenCalled();
+
+    registerSignup.mockResolvedValue({
+      manageToken: "manage-new",
+      verifyToken: "v",
+    });
+    await expect(
+      joinBeta(null, form({ email: "new@example.com" })),
+    ).rejects.toThrow("NEXT_REDIRECT:/join-beta?token=manage-new");
+    expect(sendVerificationEmail).toHaveBeenCalledTimes(1);
+    // Neither path returns a distinguishing visible result (both redirect).
+    expect(redirect).toHaveBeenCalledTimes(2);
+  });
+
+  it("still redirects when the email send returns false", async () => {
+    sendVerificationEmail.mockResolvedValue(false);
+    await expect(
+      joinBeta(null, form({ email: "ann@example.com" })),
+    ).rejects.toThrow("NEXT_REDIRECT:/join-beta?token=manage-raw");
+  });
+
+  it("still redirects when the email send throws, without logging secrets", async () => {
+    const spies = captureConsole();
+    sendVerificationEmail.mockRejectedValue(new Error("smtp down"));
+    await expect(
+      joinBeta(null, form({ email: "ann@example.com" })),
+    ).rejects.toThrow("NEXT_REDIRECT:/join-beta?token=manage-raw");
+    for (const spy of spies) {
+      const logged = JSON.stringify(spy.mock.calls);
+      expect(logged).not.toContain("ann@example.com");
+      expect(logged).not.toContain("verify-raw");
+      expect(logged).not.toContain("manage-raw");
+      spy.mockRestore();
+    }
+  });
+
+  it("returns server_error when registerSignup throws, logging nothing sensitive", async () => {
+    const spies = captureConsole();
+    registerSignup.mockRejectedValue(new Error("signup store: insert: boom"));
+    const result = await joinBeta(null, form({ email: "ann@example.com" }));
+    expect(result).toEqual({ ok: false, error: "server_error" });
+    expect(redirect).not.toHaveBeenCalled();
+    const logged = spies.map((s) => JSON.stringify(s.mock.calls)).join("");
+    expect(logged).toContain("signup store: insert: boom");
+    expect(logged).not.toContain("ann@example.com");
+    expect(logged).not.toContain("verify-raw");
+    expect(logged).not.toContain("manage-raw");
+    spies.forEach((s) => s.mockRestore());
+  });
+
+  it("returns server_error when the rate limit check throws", async () => {
+    const spies = captureConsole();
+    checkSignupRateLimit.mockRejectedValue(new Error("rpc failed"));
+    const result = await joinBeta(null, form({ email: "ann@example.com" }));
+    expect(result).toEqual({ ok: false, error: "server_error" });
+    expect(registerSignup).not.toHaveBeenCalled();
+    const logged = spies.map((s) => JSON.stringify(s.mock.calls)).join("");
+    expect(logged).not.toContain("ann@example.com");
+    spies.forEach((s) => s.mockRestore());
+  });
+
+  it("returns server_error when headers() throws", async () => {
+    captureConsole();
+    headersFn.mockRejectedValue(new Error("no request scope"));
     expect(await joinBeta(null, form({ email: "ann@example.com" }))).toEqual({
       ok: false,
       error: "server_error",
     });
-  });
-
-  it("logs the thrown error message but never the email", async () => {
-    getSupabaseAdmin.mockImplementationOnce(() => {
-      throw new Error("missing SUPABASE_URL");
-    });
-    const spy = vi.spyOn(console, "error").mockImplementation(() => {});
-    await joinBeta(null, form({ email: "ann@example.com" }));
-    const logged = JSON.stringify(spy.mock.calls);
-    expect(logged).toContain("missing SUPABASE_URL");
-    expect(logged).not.toContain("ann@example.com");
-    spy.mockRestore();
   });
 });

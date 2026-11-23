@@ -1,11 +1,14 @@
 "use server";
 
-import { HONEYPOT_FIELD } from "@/lib/signup/honeypot";
-import { parseEmail } from "@/lib/signup/email";
-import type { JoinBetaResult } from "@/lib/signup/types";
-import { getSupabaseAdmin } from "@/lib/supabase/server";
+import { headers } from "next/headers";
+import { redirect } from "next/navigation";
 
-const UNIQUE_VIOLATION = "23505";
+import { sendVerificationEmail } from "@/lib/email/verification-email";
+import { getClientKey } from "@/lib/signup/client-key";
+import { parseEmail } from "@/lib/signup/email";
+import { HONEYPOT_FIELD } from "@/lib/signup/honeypot";
+import { checkSignupRateLimit, registerSignup } from "@/lib/signup/store";
+import type { JoinBetaResult } from "@/lib/signup/types";
 
 export async function joinBeta(
   _prev: JoinBetaResult | null,
@@ -22,15 +25,30 @@ export async function joinBeta(
     return { ok: false, error: "invalid_email" };
   }
 
+  let manageToken: string;
   try {
-    const { error } = await getSupabaseAdmin()
-      .from("beta_signups")
-      .insert({ email: parsed.email, source: "landing" });
-    if (error && error.code !== UNIQUE_VIOLATION) {
-      console.error("joinBeta insert failed", { code: error.code });
-      return { ok: false, error: "server_error" };
+    const key = getClientKey(await headers());
+    const limit = await checkSignupRateLimit(key);
+    if (!limit.allowed) {
+      return {
+        ok: false,
+        error: "rate_limited",
+        retryAfterSeconds: limit.retryAfterSeconds,
+      };
     }
-    return { ok: true };
+
+    const registered = await registerSignup(parsed.email);
+    manageToken = registered.manageToken;
+
+    // Only send when a token was issued; the outcome never changes the
+    // response, so existing and new addresses look identical.
+    if (registered.verifyToken) {
+      try {
+        await sendVerificationEmail(parsed.email, registered.verifyToken);
+      } catch {
+        console.error("joinBeta verification email failed");
+      }
+    }
   } catch (err) {
     console.error(
       "joinBeta unexpected failure",
@@ -38,4 +56,7 @@ export async function joinBeta(
     );
     return { ok: false, error: "server_error" };
   }
+
+  // Outside the try block: redirect() throws a control-flow error.
+  redirect(`/join-beta?token=${encodeURIComponent(manageToken)}`);
 }
