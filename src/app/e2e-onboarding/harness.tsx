@@ -29,7 +29,11 @@ export function OnboardingHarness({
     const run = async (action: string, args: unknown[], onOk?: () => void) => {
       setCalls((c) => [...c, { action, args }]);
       if (delayMs) await new Promise((r) => setTimeout(r, delayMs));
-      if (fail === action) return { ok: false, error: "invalid" } as const;
+      if (fail === action) {
+        // "finish" has no input to be invalid; it fails like a server fault.
+        const error = action === "finish" ? "server_error" : "invalid";
+        return { ok: false, error } as const;
+      }
       onOk?.();
       return { ok: true } as const;
     };

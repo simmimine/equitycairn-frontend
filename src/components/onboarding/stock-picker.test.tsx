@@ -86,4 +86,18 @@ describe("StockPicker", () => {
       `up to ${MAX_PICKS} companies`,
     );
   });
+
+  it("shows hand-added tickers as checked cards that can be unchecked", async () => {
+    const { user, onToggle } = setup(["AAPL", "ZZZZ"]);
+    const box = screen.getByRole("checkbox", { name: "ZZZZ (custom ticker)" });
+    expect(box).toBeChecked();
+    await user.click(box);
+    expect(onToggle).toHaveBeenCalledWith("ZZZZ");
+  });
+
+  it("hides custom tickers that do not match the search", async () => {
+    const { user } = setup(["ZZZZ"]);
+    await user.type(screen.getByRole("searchbox"), "visa");
+    expect(screen.queryByRole("checkbox", { name: /ZZZZ/ })).toBeNull();
+  });
 });

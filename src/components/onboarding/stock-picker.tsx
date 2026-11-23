@@ -22,6 +22,7 @@ import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import {
   CATEGORIES,
   MAX_PICKS,
+  POPULAR_COMPANIES,
   filterCompanies,
   tickerCandidate,
   type Category,
@@ -44,6 +45,16 @@ export function StockPicker({
   const companies = filterCompanies(query, category);
   const candidate =
     category === "All" ? tickerCandidate(query, selected) : null;
+  // Tickers added by hand (or saved earlier) have no card in the popular list, and the
+  // watchlist panel is desktop-only, so show them here where they can be unchecked.
+  const q = query.trim().toUpperCase();
+  const custom =
+    category === "All"
+      ? selected.filter(
+          (t) =>
+            !POPULAR_COMPANIES.some((c) => c.ticker === t) && t.includes(q),
+        )
+      : [];
 
   return (
     <div className="flex flex-col gap-5">
@@ -90,13 +101,44 @@ export function StockPicker({
         </span>
       </div>
 
-      {companies.length === 0 && !candidate && (
+      {companies.length === 0 && custom.length === 0 && !candidate && (
         <p role="status" className="text-sm text-muted-foreground">
           No companies match your search.
         </p>
       )}
 
       <ul className="grid gap-4 sm:grid-cols-2">
+        {custom.map((ticker) => (
+          <li key={ticker}>
+            <FieldLabel>
+              <Field
+                orientation="horizontal"
+                className="items-center gap-3 p-4"
+              >
+                <Avatar
+                  aria-hidden="true"
+                  className="size-11 rounded-xl after:hidden"
+                >
+                  <AvatarFallback className="rounded-xl bg-secondary text-sm font-bold text-secondary-foreground">
+                    {ticker.slice(0, 2)}
+                  </AvatarFallback>
+                </Avatar>
+                <FieldContent>
+                  <FieldTitle>{ticker}</FieldTitle>
+                  <FieldDescription className="text-xs">
+                    Custom ticker
+                  </FieldDescription>
+                </FieldContent>
+                <Checkbox
+                  aria-label={`${ticker} (custom ticker)`}
+                  checked
+                  onCheckedChange={() => onToggle(ticker)}
+                  className="size-[22px] rounded-full"
+                />
+              </Field>
+            </FieldLabel>
+          </li>
+        ))}
         {companies.map((c) => {
           const checked = selected.includes(c.ticker);
           return (

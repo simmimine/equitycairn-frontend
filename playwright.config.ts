@@ -12,7 +12,15 @@ export default defineConfig({
     baseURL: `http://localhost:${port}`,
     trace: "on-first-retry",
   },
-  projects: [{ name: "chromium", use: { ...devices["Desktop Chrome"] } }],
+  projects: [
+    { name: "chromium", use: { ...devices["Desktop Chrome"] } },
+    {
+      // Onboarding is the one flow designed mobile-first; run it on a phone too.
+      name: "mobile",
+      testMatch: /onboarding\.spec\.ts/,
+      use: { ...devices["Pixel 7"] },
+    },
+  ],
   webServer: {
     command: `pnpm dev --port ${port}`,
     url: `http://localhost:${port}`,

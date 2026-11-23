@@ -201,6 +201,8 @@ describe("OnboardingFlow · welcome", () => {
       }),
     ).toBeInTheDocument();
     expect(saveWatchlistAction).not.toHaveBeenCalled();
+    // Regression: the welcome button must not double as the next step's submit.
+    expect(finishOnboardingAction).not.toHaveBeenCalled();
   });
 });
 

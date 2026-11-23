@@ -457,7 +457,13 @@ export function OnboardingFlow({
       }
       info={info}
       actions={
-        <div className="flex flex-col items-stretch gap-1 text-center">
+        // Keyed by step so each step gets fresh buttons. Otherwise React reuses the
+        // welcome step's type="button" node as the next step's type="submit" button
+        // mid-click, and the browser submits that step's form straight away.
+        <div
+          key={step}
+          className="flex flex-col items-stretch gap-1 text-center"
+        >
           {actions_}
         </div>
       }
