@@ -25,16 +25,34 @@ Add shadcn components with `pnpm dlx shadcn@latest add <component>`.
 
 ## Configuration and beta sign-ups
 
-The landing page's beta sign-up form is handled by a server action (`joinBeta`) that writes to Supabase. It needs two **server-only** variables (never prefix them with `NEXT_PUBLIC_`, or they would be exposed to the browser):
+The landing page's beta sign-up form is handled by server actions that write to Supabase and send a verification email through Resend. All of these are **server-only** variables (never prefix them with `NEXT_PUBLIC_`, or they would be exposed to the browser):
 
-| Variable              | Purpose                                                |
-| --------------------- | ------------------------------------------------------ |
-| `SUPABASE_URL`        | Supabase project URL                                   |
-| `SUPABASE_SECRET_KEY` | Supabase secret key (bypasses RLS; keep it out of git) |
+| Variable              | Purpose                                                                                                         |
+| --------------------- | --------------------------------------------------------------------------------------------------------------- |
+| `SUPABASE_URL`        | Supabase project URL                                                                                            |
+| `SUPABASE_SECRET_KEY` | Supabase secret key (bypasses RLS; keep it out of git)                                                          |
+| `RESEND_API_KEY`      | Resend API key. Without it no email is sent (sign-up still succeeds)                                            |
+| `EMAIL_FROM`          | Sender. Default `EquityCairn <onboarding@resend.dev>`                                                           |
+| `SITE_URL`            | Base URL used in email links. Default `http://localhost:3000`; **must be the public URL when deployed**         |
+| `TRUSTED_PROXY_HOPS`  | Trusted proxies in front of the app. Default `1` (last `x-forwarded-for` entry, correct for Cloud Run directly) |
 
-Locally, copy `.env.example` to `.env.local` and fill them in. In deployment (Cloud Run), set `SUPABASE_URL` as an env var and `SUPABASE_SECRET_KEY` as a secret (for example from Secret Manager) at deploy time. The production build does not need them, but sign-ups fail at runtime without them.
+Set `TRUSTED_PROXY_HOPS=2` behind a Google HTTPS load balancer. With no proxy in front of the app, `x-forwarded-for` is fully client-controlled, so the per-IP sign-up limit can be bypassed.
 
-Sign-ups are stored in the `public.beta_signups` table, created by the migration `supabase/migrations/20261122231834_create_beta_signups.sql`. Row Level Security is enabled with no policies for `anon` or `authenticated`, so only the secret key (server side) can read or write it.
+Locally, copy `.env.example` to `.env.local` and fill them in. In deployment (Cloud Run), set the plain values as env vars and `SUPABASE_SECRET_KEY` and `RESEND_API_KEY` as secrets (for example from Secret Manager) at deploy time. The production build does not need them, but sign-ups fail at runtime without the Supabase ones.
+
+**Test sender limitation:** `onboarding@resend.dev` can only deliver to the address that owns the Resend account. Until a domain is verified in Resend and `EMAIL_FROM` is changed, no one else receives the verification email.
+
+### Database
+
+Sign-ups are stored in `public.beta_signups`, created by `supabase/migrations/20261122231834_create_beta_signups.sql`. `supabase/migrations/20261123183803_email_verification.sql` adds the token, verification and cooldown columns plus `public.signup_rate_limits` and the `check_signup_rate_limit` function. Row Level Security is enabled with no policies for `anon` or `authenticated`, so only the secret key (server side) can read or write them.
+
+### Sign-up and verification flow
+
+1. The form submits to `joinBeta`, which stores the address, emails a verification link and redirects to `/join-beta?token=<manage token>`.
+2. `/join-beta` shows "Check your email" with a re-send button that is disabled until the cooldown ends. The cooldown is read from the server, so a reload does not reset it.
+3. The emailed link opens `/join-beta/verify?token=<verify token>` and marks the address verified. Opening it again reports it as already verified.
+
+Tokens are stored only as SHA-256 hashes. Sign-ups are limited to one per minute per client IP, and re-sends to one per minute per address.
 
 ## Docker / Cloud Run
 
