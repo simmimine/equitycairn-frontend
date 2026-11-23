@@ -1,13 +1,23 @@
-import { Button } from "@/components/ui/button";
+import { Faq } from "@/components/landing/faq";
+import { FinalCta } from "@/components/landing/final-cta";
+import { Hero } from "@/components/landing/hero";
+import { HowItWorks } from "@/components/landing/how-it-works";
+import { SiteFooter } from "@/components/landing/site-footer";
+import { SiteHeader } from "@/components/landing/site-header";
+import { Trust } from "@/components/landing/trust";
 
 export default function Home() {
   return (
-    <main className="flex flex-1 flex-col items-center justify-center gap-4 p-8 text-center">
-      <h1 className="text-3xl font-semibold tracking-tight">EquityCairn</h1>
-      <p className="text-muted-foreground">
-        The market news that matters to your watchlist.
-      </p>
-      <Button disabled>Coming soon</Button>
-    </main>
+    <>
+      <SiteHeader />
+      <main id="top" className="flex-1 scroll-mt-20">
+        <Hero />
+        <HowItWorks />
+        <Trust />
+        <Faq />
+        <FinalCta />
+      </main>
+      <SiteFooter />
+    </>
   );
 }

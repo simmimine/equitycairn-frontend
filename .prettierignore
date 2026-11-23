@@ -3,3 +3,4 @@ AGENTS.md
 .claude
 .next
 pnpm-lock.yaml
+.mcp.json
