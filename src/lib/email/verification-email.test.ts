@@ -94,6 +94,34 @@ describe("sendVerificationEmail", () => {
     expectNoLeak();
   });
 
+  it("passes an abort signal to fetch", async () => {
+    fetchMock.mockResolvedValue(new Response("{}", { status: 200 }));
+    await sendVerificationEmail(ADDRESS, TOKEN);
+    expect(fetchMock.mock.calls[0][1].signal).toBeInstanceOf(AbortSignal);
+  });
+
+  it("returns false on a timeout without leaking details", async () => {
+    fetchMock.mockRejectedValue(
+      new DOMException("The operation timed out.", "TimeoutError"),
+    );
+    await expect(sendVerificationEmail(ADDRESS, TOKEN)).resolves.toBe(false);
+    expect(loggedText()).toContain("timed out");
+    expectNoLeak();
+  });
+
+  it("HTML-escapes the link in the html body only", async () => {
+    process.env.SITE_URL = 'https://example.org/a"b&c';
+    fetchMock.mockResolvedValue(new Response("{}", { status: 200 }));
+    await sendVerificationEmail(ADDRESS, TOKEN);
+    const body = JSON.parse(fetchMock.mock.calls[0][1].body);
+    const raw = `https://example.org/a"b&c/join-beta/verify?token=${TOKEN}`;
+    expect(body.text).toContain(raw);
+    expect(body.html).not.toContain('a"b');
+    expect(body.html).toContain(
+      `href="https://example.org/a&quot;b&amp;c/join-beta/verify?token=${TOKEN}"`,
+    );
+  });
+
   it("returns false without calling fetch when the API key is unset", async () => {
     delete process.env.RESEND_API_KEY;
     await expect(sendVerificationEmail(ADDRESS, TOKEN)).resolves.toBe(false);

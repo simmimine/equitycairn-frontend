@@ -1,6 +1,15 @@
 const DEFAULT_FROM = "EquityCairn <onboarding@resend.dev>";
 const DEFAULT_SITE_URL = "http://localhost:3000";
 
+function escapeHtml(value: string): string {
+  return value
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
 export async function sendVerificationEmail(
   to: string,
   rawVerifyToken: string,
@@ -18,6 +27,8 @@ export async function sendVerificationEmail(
   );
   const link = `${siteUrl}/join-beta/verify?token=${encodeURIComponent(rawVerifyToken)}`;
 
+  const safeLink = escapeHtml(link);
+
   const text = [
     "EquityCairn",
     "",
@@ -26,11 +37,12 @@ export async function sendVerificationEmail(
     "",
     "If you didn't sign up, ignore this email.",
   ].join("\n");
-  const html = `<p><strong>EquityCairn</strong></p><p>Confirm your beta sign-up by opening this link:</p><p><a href="${link}">${link}</a></p><p>If you didn't sign up, ignore this email.</p>`;
+  const html = `<p><strong>EquityCairn</strong></p><p>Confirm your beta sign-up by opening this link:</p><p><a href="${safeLink}">${safeLink}</a></p><p>If you didn't sign up, ignore this email.</p>`;
 
   try {
     const res = await fetch("https://api.resend.com/emails", {
       method: "POST",
+      signal: AbortSignal.timeout(5000),
       headers: {
         Authorization: `Bearer ${apiKey}`,
         "Content-Type": "application/json",
@@ -51,7 +63,8 @@ export async function sendVerificationEmail(
     }
     return true;
   } catch (err) {
-    const message = err instanceof Error ? err.message : "unknown error";
+    const raw = (err as { message?: unknown } | null)?.message;
+    const message = typeof raw === "string" ? raw : "unknown error";
     console.error(`Verification email failed: ${message}`);
     return false;
   }
