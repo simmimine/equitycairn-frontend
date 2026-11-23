@@ -1,4 +1,7 @@
+import Link from "next/link";
+
 import { JoinBetaLink } from "@/components/landing/join-beta-link";
+import { buttonVariants } from "@/components/ui/button";
 
 export function SiteHeader() {
   return (
@@ -7,7 +10,12 @@ export function SiteHeader() {
         <a href="#top" className="text-base font-semibold tracking-tight">
           EquityCairn
         </a>
-        <JoinBetaLink />
+        <nav className="flex items-center gap-2">
+          <Link href="/login" className={buttonVariants({ variant: "ghost" })}>
+            Log in
+          </Link>
+          <JoinBetaLink />
+        </nav>
       </div>
     </header>
   );
