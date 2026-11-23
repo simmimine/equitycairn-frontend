@@ -1,0 +1,51 @@
+import {
+  Field,
+  FieldContent,
+  FieldLabel,
+  FieldTitle,
+} from "@/components/ui/field";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { cn } from "@/lib/utils";
+
+/**
+ * Single-choice pill cards (design step 2). Built on shadcn's radio-card pattern:
+ * the card is the label, the radio itself is visually hidden but keyboard-operable.
+ */
+export function OptionCards({
+  legend,
+  value,
+  onValueChange,
+  options,
+  className,
+}: {
+  legend: string;
+  value: string;
+  onValueChange: (value: string) => void;
+  options: readonly (readonly [string, string])[];
+  className?: string;
+}) {
+  return (
+    <div className="flex flex-col gap-3">
+      <p id={`${legend}-legend`} className="text-sm font-semibold">
+        {legend}
+      </p>
+      <RadioGroup
+        aria-labelledby={`${legend}-legend`}
+        value={value}
+        onValueChange={(v) => onValueChange(String(v))}
+        className={cn("flex flex-wrap gap-3", className)}
+      >
+        {options.map(([v, label]) => (
+          <FieldLabel key={v} className="!w-auto">
+            <Field orientation="horizontal" className="!w-auto rounded-xl px-4">
+              <FieldContent>
+                <FieldTitle className="text-sm font-medium">{label}</FieldTitle>
+              </FieldContent>
+              <RadioGroupItem value={v} className="sr-only" />
+            </Field>
+          </FieldLabel>
+        ))}
+      </RadioGroup>
+    </div>
+  );
+}
