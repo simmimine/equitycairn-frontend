@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { Suspense } from "react";
 
 import { OnboardingContent } from "./onboarding-content";
-import { JoinBetaShell } from "@/components/join-beta/join-beta-shell";
+import { OnboardingFallback } from "@/components/onboarding/onboarding-shell";
 
 export const metadata: Metadata = {
   title: "Welcome | EquityCairn",
@@ -11,15 +11,7 @@ export const metadata: Metadata = {
 
 export default function OnboardingPage() {
   return (
-    <Suspense
-      fallback={
-        <JoinBetaShell>
-          <p role="status" className="sr-only">
-            Loading…
-          </p>
-        </JoinBetaShell>
-      }
-    >
+    <Suspense fallback={<OnboardingFallback />}>
       <OnboardingContent />
     </Suspense>
   );

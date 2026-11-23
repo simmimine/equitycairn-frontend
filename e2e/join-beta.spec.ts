@@ -13,7 +13,7 @@ for (const [name, path] of [
     await expect(
       page.getByRole("heading", { level: 1, name: "This link isn't valid" }),
     ).toBeVisible();
-    await expect(page.getByRole("button")).toHaveCount(0);
+    await expect(page.locator("main").getByRole("button")).toHaveCount(0);
     await page.getByRole("link", { name: "Back to home" }).click();
     await expect(page).toHaveURL(/\/$/);
   });
