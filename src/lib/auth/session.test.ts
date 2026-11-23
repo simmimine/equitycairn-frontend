@@ -1,8 +1,10 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const cookies = vi.fn();
+const connection = vi.fn();
 vi.mock("server-only", () => ({}));
 vi.mock("next/headers", () => ({ cookies: () => cookies() }));
+vi.mock("next/server", () => ({ connection: () => connection() }));
 vi.mock("next/navigation", () => ({
   redirect: (u: string) => {
     throw new Error(`NEXT_REDIRECT:${u}`);
@@ -20,6 +22,8 @@ beforeEach(() => {
     delete process.env[k];
   }
   cookies.mockReset();
+  connection.mockReset();
+  connection.mockResolvedValue(undefined);
   cookies.mockResolvedValue({ getAll: () => [], set: vi.fn() });
 });
 
@@ -34,6 +38,13 @@ describe("createSessionClient", () => {
   it("reads the request cookies before checking configuration, so builds treat the route as dynamic", async () => {
     await expect(createSessionClient()).rejects.toThrow(/SUPABASE_URL/);
     expect(cookies).toHaveBeenCalled();
+  });
+
+  it("waits for the request before building the client, which reads the clock", async () => {
+    process.env.SUPABASE_URL = "http://localhost:54321";
+    process.env.SUPABASE_PUBLISHABLE_KEY = "sb_publishable_test";
+    await createSessionClient();
+    expect(connection).toHaveBeenCalled();
   });
 
   it("builds a client when configured", async () => {
