@@ -104,4 +104,20 @@ describe("Sidebar", () => {
       screen.getByRole("button", { name: "Manage watchlist" }),
     ).toHaveClass("focus-visible:ring-3", "p-1", "-m-1");
   });
+
+  it("is a card surface with no line above the profile", () => {
+    renderSidebar();
+    expect(screen.getByRole("complementary")).toHaveClass("bg-card");
+    expect(
+      screen.getByText("Personal workspace").parentElement!.parentElement,
+    ).not.toHaveClass("border-t");
+  });
+
+  it("marks the active item with a link-coloured icon and bold label", () => {
+    renderSidebar();
+    const link = screen.getByRole("link", { name: "News feed" });
+    expect(link).toHaveClass("bg-secondary", "font-bold");
+    expect(link).not.toHaveClass("font-medium");
+    expect(link.querySelector("svg")).toHaveClass("text-link");
+  });
 });

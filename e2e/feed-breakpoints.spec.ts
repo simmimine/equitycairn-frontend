@@ -154,6 +154,118 @@ test("at 1440 the stories and panel match the desktop board", async ({
   expect(sidebar.width).toBe(260);
 });
 
+test("at 1440 the sidebar and panel spacing match the desktop board", async ({
+  page,
+}) => {
+  await open(page, 1440, WATCHLISTS["3 tickers"]);
+  const sidebar = page.getByRole("complementary", { name: "Sidebar" });
+  const centre = (b: DOMRectLike) => b.y + b.height / 2;
+  const near = (actual: number, expected: number, what: string) =>
+    expect(Math.abs(actual - expected), `${what}: ${actual}`).toBeLessThan(1.5);
+
+  const feed = await box(sidebar.getByRole("link", { name: "News feed" }));
+  near(feed.y, 98, "News feed top");
+  near(feed.height, 42, "News feed height");
+  const saved = await box(
+    sidebar.getByRole("button", { name: "Saved stories" }),
+  );
+  near(saved.y, 150, "Saved stories top");
+  near(saved.height, 42, "Saved stories height");
+  const heading = sidebar.getByRole("heading", { name: "Your watchlist" });
+  near(centre(await box(heading)), 226, "watchlist heading centre");
+  const markers = sidebar.locator("li > span[aria-hidden]");
+  for (const [i, y] of [266, 314, 362].entries()) {
+    near(centre(await box(markers.nth(i))), y, `marker ${i} centre`);
+  }
+
+  const panel = page.getByRole("complementary", {
+    name: "Coverage at a glance",
+  });
+  const rows = panel.getByRole("listitem");
+  const first = await box(rows.nth(0));
+  near((await box(rows.nth(1))).y - first.y, 44, "panel row pitch");
+  const p = await box(panel);
+  expect(Math.abs(p.height - 310), `panel ${p.height}`).toBeLessThanOrEqual(8);
+  const mismatch = await box(
+    page.getByRole("button", { name: "Report a ticker mismatch" }),
+  );
+  // The button's 4px padding surrounds the text.
+  near(mismatch.y + 4 - (p.y + p.height), 40, "mismatch gap");
+});
+
+for (const width of [768, 900, 1023]) {
+  test(`the narrow sidebar's labels stay on one line at ${width}px`, async ({
+    page,
+  }) => {
+    await open(page, width, WATCHLISTS["3 tickers"]);
+    const sidebar = page.getByRole("complementary", { name: "Sidebar" });
+    expect((await box(sidebar)).width).toBe(220);
+    for (const text of ["Your watchlist", "Personal workspace"]) {
+      const lines = await sidebar
+        .getByText(text, { exact: true })
+        .evaluate((el) => {
+          const range = document.createRange();
+          range.selectNodeContents(el);
+          const tops = [...range.getClientRects()].map((r) => Math.round(r.y));
+          // Neither wrapped nor cut short with an ellipsis.
+          return {
+            lines: new Set(tops).size,
+            cut: el.scrollWidth > el.clientWidth + 1,
+          };
+        });
+      expect(lines, text).toEqual({ lines: 1, cut: false });
+    }
+  });
+}
+
+for (const width of [320, 390, 1440]) {
+  test(`each select's chevron follows its text at ${width}px`, async ({
+    page,
+  }) => {
+    await open(page, width, WATCHLISTS["3 tickers"]);
+    for (const [name, value] of [
+      ["Time range", "any"],
+      ["Time range", "30d"],
+      ["Source", ""],
+      ["Source", "Example Publisher"],
+    ]) {
+      const select = page.getByRole("combobox", { name });
+      await select.selectOption(value);
+      await expect(select).toHaveCSS("appearance", "none");
+      const geometry = await select.evaluate((el: HTMLSelectElement) => {
+        const style = getComputedStyle(el);
+        const context = document.createElement("canvas").getContext("2d")!;
+        context.font = `${style.fontWeight} ${style.fontSize} ${style.fontFamily}`;
+        const box = el.getBoundingClientRect();
+        const icon = el.parentElement!.querySelector("svg")!;
+        const i = icon.getBoundingClientRect();
+        return {
+          textEnd:
+            box.x +
+            parseFloat(style.borderLeftWidth) +
+            parseFloat(style.paddingLeft) +
+            context.measureText(el.selectedOptions[0].text).width,
+          iconStart: i.x,
+          iconEnd: i.right,
+          end: box.right,
+          width: box.width,
+          // A click on the icon reaches the select.
+          hit:
+            document.elementFromPoint(i.x + i.width / 2, i.y + i.height / 2) ===
+            el,
+        };
+      });
+      const gap = geometry.iconStart - geometry.textEnd;
+      expect(gap, `${name} ${value} gap`).toBeGreaterThanOrEqual(1);
+      expect(gap, `${name} ${value} gap`).toBeLessThanOrEqual(10);
+      expect(geometry.iconEnd).toBeLessThan(geometry.end);
+      expect(geometry.width).toBeGreaterThanOrEqual(120);
+      expect(geometry.hit, `${name} icon passes clicks through`).toBe(true);
+    }
+    await expectNoSidewaysScroll(page);
+  });
+}
+
 test("at 390 the phone header and tab bar match the phone board", async ({
   page,
 }) => {

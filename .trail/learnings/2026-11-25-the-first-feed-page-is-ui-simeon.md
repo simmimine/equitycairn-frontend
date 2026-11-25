@@ -31,7 +31,11 @@ With cached components on, leaving a route hides it instead of unmounting it: ef
 In the code: `useLayoutEffect` cleanups in src/components/feed/coming-soon.tsx and account-menu.tsx; node_modules/next/dist/docs/01-app/02-guides/preserving-ui-state.md
 The phone header grows to 118px while the search row is open, so the page's scroll padding grows with it (`data-search-open` on the header, `:has()` rule in globals.css). A ticker chip wraps a long unbroken ticker (`break-all`, `max-w-full`) and the story card's top row wraps, otherwise a phone layout viewport widens.
 
+Feed filters survive a hidden route while the watchlist can change, so FeedApp treats a ticker or source the feed no longer has as none, and is keyed by user id.
+Each filter select draws its own chevron right after the chosen text, as the boards do: an invisible copy of the label sets the width and the native select is stretched over it.
+
 ## Tried and ruled out
+A chevron at the right edge of an `appearance-none` select: a native select is as wide as its longest option, so the icon drifts away from shorter choices.
 Ticker filter only, or visual-only controls: the owner wanted everything testable now.
 Inventing simple saved, coverage and watchlist screens: no designs to follow. Hiding those controls: the page would differ from the design.
 Filtering via URL params or a mock API route: both fix the backend's shape before it is designed.

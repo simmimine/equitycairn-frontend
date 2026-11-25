@@ -1,7 +1,7 @@
 "use client";
 
 import { cn } from "cn";
-import { useLayoutEffect, useMemo, useState } from "react";
+import { useLayoutEffect, useMemo, useRef, useState } from "react";
 
 import { SURFACE, TEXT_LINK } from "@/components/brand/styles";
 import { Button } from "@/components/ui/button";
@@ -31,10 +31,23 @@ export function FeedApp({
   firstName: string | null;
   signOutAction: () => void | Promise<void>;
 }) {
-  const [filters, setFilters] = useState<FeedFilters>(NO_FILTERS);
+  const [chosen, setFilters] = useState<FeedFilters>(NO_FILTERS);
+  const heading = useRef<HTMLHeadingElement>(null);
   const { companies, stories, generatedAt } = feed;
 
   const sources = useMemo(() => sourcesOf(stories), [stories]);
+  // State outlives a hidden route (Activity) while the feed can change, so a
+  // choice the feed no longer has counts as none.
+  const filters = useMemo<FeedFilters>(
+    () => ({
+      ...chosen,
+      ticker: companies.some((c) => c.ticker === chosen.ticker)
+        ? chosen.ticker
+        : null,
+      source: sources.find((source) => source === chosen.source) ?? null,
+    }),
+    [chosen, companies, sources],
+  );
   const shown = useMemo(
     () => filterStories(stories, companies, filters, generatedAt),
     [stories, companies, filters, generatedAt],
@@ -50,6 +63,12 @@ export function FeedApp({
 
   const hasCompanies = companies.length > 0;
 
+  function clearFilters() {
+    setFilters(NO_FILTERS);
+    // The button that had focus is about to go.
+    heading.current?.focus();
+  }
+
   return (
     <ComingSoonProvider>
       <AppHeader
@@ -64,7 +83,14 @@ export function FeedApp({
           <div className="mx-auto grid w-full max-w-[600px] gap-y-6 md:max-w-[680px] xl:max-w-[1100px] xl:grid-cols-[minmax(0,680px)_390px] xl:grid-rows-[auto_auto_auto_1fr] xl:gap-x-[30px]">
             <div className="flex min-w-0 flex-col gap-4 xl:col-start-1">
               <div className="flex flex-col gap-1.5">
-                <h1 className="text-[23px] font-bold md:text-[28px]">
+                <h1
+                  ref={heading}
+                  tabIndex={-1}
+                  className={cn(
+                    FOCUS_RING,
+                    "rounded-sm text-[23px] font-bold md:text-[28px]",
+                  )}
+                >
                   News for your watchlist
                 </h1>
                 <p className="hidden text-xs text-muted-foreground md:block">
@@ -115,7 +141,7 @@ export function FeedApp({
                   <Button
                     variant="outline"
                     className="mt-2"
-                    onClick={() => setFilters(NO_FILTERS)}
+                    onClick={clearFilters}
                   >
                     Clear filters
                   </Button>
@@ -140,14 +166,19 @@ export function FeedApp({
 
             {/* Below `xl` its children join the column under the stories; from
                 `xl` it is the right-hand column, spanning every row. */}
-            <div className="contents xl:col-start-2 xl:row-span-4 xl:row-start-1 xl:flex xl:flex-col xl:gap-6 xl:self-start">
-              <ContextPanel companies={companies} />
-              {hasCompanies && <ReportMismatch />}
-            </div>
+            {/* With no companies there are no tickers or sources to talk about. */}
+            {hasCompanies && (
+              <>
+                <div className="contents xl:col-start-2 xl:row-span-4 xl:row-start-1 xl:flex xl:flex-col xl:gap-10 xl:self-start">
+                  <ContextPanel companies={companies} />
+                  <ReportMismatch />
+                </div>
 
-            <p className="hidden text-[11px] text-muted-foreground md:block xl:col-start-1 xl:mt-6">
-              Example content only · sources shown here are placeholders.
-            </p>
+                <p className="hidden text-[11px] text-muted-foreground md:block xl:col-start-1 xl:mt-6">
+                  Example content only · sources shown here are placeholders.
+                </p>
+              </>
+            )}
           </div>
         </main>
       </div>

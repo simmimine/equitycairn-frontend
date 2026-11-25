@@ -1,7 +1,9 @@
 import { render, screen, within } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const requireUser = vi.fn();
+const signOut = vi.hoisted(() => vi.fn());
 const getProfile = vi.fn();
 const redirect = vi.fn((url: string) => {
   throw new Error(`NEXT_REDIRECT:${url}`);
@@ -11,7 +13,7 @@ vi.mock("@/lib/auth/session", () => ({ requireUser: () => requireUser() }));
 vi.mock("@/lib/onboarding/store", () => ({
   getProfile: (...a: unknown[]) => getProfile(...a),
 }));
-vi.mock("@/app/actions/login", () => ({ signOut: vi.fn() }));
+vi.mock("@/app/actions/login", () => ({ signOut }));
 vi.mock("next/navigation", () => ({ redirect: (u: string) => redirect(u) }));
 
 import { FeedContent } from "./feed-content";
@@ -55,6 +57,28 @@ describe("FeedContent", () => {
     expect(
       screen.getByRole("button", { name: "Account menu" }),
     ).toBeInTheDocument();
+  });
+
+  it("wires the account menu to sign out", async () => {
+    getProfile.mockResolvedValue({
+      firstName: "Ann",
+      onboardedAt: "2026-11-24T00:00:00Z",
+      tickers: ["AAPL"],
+    });
+    render(await FeedContent());
+    await userEvent.click(screen.getByRole("button", { name: "Account menu" }));
+    expect(signOut).not.toHaveBeenCalled();
+    await userEvent.click(screen.getByRole("button", { name: "Sign out" }));
+    expect(signOut).toHaveBeenCalledTimes(1);
+  });
+
+  it("keys the feed by user, so one user's filters never reach another", async () => {
+    getProfile.mockResolvedValue({
+      firstName: "Ann",
+      onboardedAt: "2026-11-24T00:00:00Z",
+      tickers: ["AAPL"],
+    });
+    expect((await FeedContent()).key).toBe("u1");
   });
 
   it("shows an empty state with no tickers", async () => {

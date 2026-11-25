@@ -130,4 +130,29 @@ describe("FeedFilterBar", () => {
       );
     },
   );
+
+  it.each([
+    ["Time range", "Past 7 days"],
+    ["Source", "Example Wire"],
+  ])(
+    "draws its own chevron on the %s select, after the chosen text",
+    (name, label) => {
+      const { select } = setup(busy);
+      expect(select(name)).toHaveClass("appearance-none");
+      const wrapper = select(name).parentElement!;
+      // An invisible copy of the chosen label places the chevron.
+      const face = wrapper.querySelector("[data-label]")!;
+      expect(face).toHaveAttribute("data-label", label);
+      expect(face).toHaveAttribute("aria-hidden", "true");
+      expect(face).toHaveClass("pointer-events-none");
+      expect(face.querySelector("svg.lucide-chevron-down")).not.toBeNull();
+    },
+  );
+
+  it("labels the empty source choice Any source", () => {
+    const { select } = setup();
+    expect(
+      select("Source").parentElement!.querySelector("[data-label]"),
+    ).toHaveAttribute("data-label", "Any source");
+  });
 });

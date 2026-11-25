@@ -14,7 +14,9 @@ export async function FeedContent() {
 
   const feed = await getFeed(profile.tickers);
   return (
+    // Keyed so filters kept by a hidden route never pass to another user.
     <FeedApp
+      key={user.id}
       feed={feed}
       firstName={profile.firstName}
       signOutAction={signOut}

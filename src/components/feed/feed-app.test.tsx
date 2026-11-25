@@ -138,6 +138,8 @@ describe("FeedApp", () => {
     expect(screen.getByText("0 stories shown")).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("button", { name: "Clear filters" }));
+    // The button is gone: focus must not fall back to the body.
+    expect(screen.getByRole("heading", { level: 1 })).toHaveFocus();
     expect(stories()).toHaveLength(6);
     expect(search()).toHaveValue("");
     expect(pill("All")).toHaveAttribute("aria-pressed", "true");
@@ -162,6 +164,14 @@ describe("FeedApp", () => {
     expect(screen.queryByRole("combobox")).toBeNull();
     expect(screen.queryByRole("list", { name: "Stories" })).toBeNull();
     expect(screen.queryByText("Newest first")).toBeNull();
+    // Nothing that talks about tickers or sources there are none of.
+    expect(
+      screen.queryByRole("complementary", { name: "Coverage at a glance" }),
+    ).toBeNull();
+    expect(
+      screen.queryByRole("button", { name: "Report a ticker mismatch" }),
+    ).toBeNull();
+    expect(screen.queryByText(/Example content only/)).toBeNull();
   });
 
   it("says mismatch reporting is coming soon", () => {
@@ -194,5 +204,34 @@ describe("FeedApp", () => {
     rerender(view("visible"));
     expect(document.documentElement).toHaveClass("feed-scroll-padding");
     expect(stories()).toHaveLength(2);
+  });
+
+  it("ignores a chosen ticker or source that the new feed does not have", async () => {
+    const view = (f: Feed, mode: "visible" | "hidden" = "visible") => (
+      <Activity mode={mode}>
+        <FeedApp feed={f} firstName="Ann" signOutAction={vi.fn()} />
+      </Activity>
+    );
+    const { rerender } = render(view(feed));
+    fireEvent.click(pill("NVDA"));
+    fireEvent.change(screen.getByRole("combobox", { name: "Source" }), {
+      target: { value: "Company filing" },
+    });
+
+    // The watchlist changes while the route is hidden.
+    const apple = await getFeed(["AAPL"], NOW);
+    const next: Feed = {
+      ...apple,
+      stories: apple.stories.filter((s) => s.publisher !== "Company filing"),
+    };
+    rerender(view(feed, "hidden"));
+    rerender(view(next));
+
+    expect(stories()).toHaveLength(next.stories.length);
+    expect(pill("All")).toHaveAttribute("aria-pressed", "true");
+    expect(screen.getByRole("combobox", { name: "Source" })).toHaveValue("");
+    // Searching afterwards does not bring the stale choices back.
+    fireEvent.change(search(), { target: { value: "example" } });
+    expect(stories()).toHaveLength(next.stories.length);
   });
 });

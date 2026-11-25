@@ -1,4 +1,5 @@
 import { cn } from "cn";
+import { ChevronDown } from "lucide-react";
 
 import type { Company, FeedFilters, TimeRange } from "@/lib/feed/types";
 
@@ -12,10 +13,53 @@ const TIME_OPTIONS: { value: TimeRange; label: string }[] = [
 const FOCUS =
   "outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50";
 
-const SELECT = cn(
-  "h-8 max-w-full min-w-[120px] rounded-[10px] border border-input bg-card px-2 text-base font-medium text-muted-foreground md:text-xs",
-  FOCUS,
-);
+// 16px below `md`, or iOS zooms in on focus.
+const SELECT_TEXT = "text-base font-medium md:text-xs";
+
+/**
+ * A native select with its chevron right after the chosen text. A native select
+ * is as wide as its longest option, so an invisible copy of the chosen label
+ * sets the width and places the icon, and the select is stretched over it.
+ */
+function FilterSelect({
+  options,
+  value,
+  ...props
+}: Omit<React.ComponentProps<"select">, "children"> & {
+  options: { value: string; label: string }[];
+  value: string;
+}) {
+  return (
+    <div className="relative h-8 max-w-full min-w-[120px]">
+      <select
+        value={value}
+        className={cn(
+          "absolute inset-0 w-full appearance-none rounded-[10px] border border-input bg-card pr-2 pl-3 text-muted-foreground",
+          SELECT_TEXT,
+          FOCUS,
+        )}
+        {...props}
+      >
+        {options.map((option) => (
+          <option key={option.value} value={option.value}>
+            {option.label}
+          </option>
+        ))}
+      </select>
+      <span
+        aria-hidden="true"
+        data-label={options.find((option) => option.value === value)?.label}
+        // The border keeps the copy's text in line with the select's.
+        className={cn(
+          "pointer-events-none relative flex h-full items-center gap-1.5 overflow-hidden border border-transparent px-3 whitespace-pre text-muted-foreground before:invisible before:content-[attr(data-label)]",
+          SELECT_TEXT,
+        )}
+      >
+        <ChevronDown className="size-3.5 shrink-0" />
+      </span>
+    </div>
+  );
+}
 
 function TickerPill({
   pressed,
@@ -73,35 +117,25 @@ export function FeedFilterBar({
         ))}
       </div>
       <div className="flex max-w-full min-w-0 flex-wrap gap-2">
-        <select
+        <FilterSelect
           aria-label="Time range"
-          className={SELECT}
+          options={TIME_OPTIONS}
           value={filters.time}
           onChange={(event) =>
             onChange({ ...filters, time: event.target.value as TimeRange })
           }
-        >
-          {TIME_OPTIONS.map(({ value, label }) => (
-            <option key={value} value={value}>
-              {label}
-            </option>
-          ))}
-        </select>
-        <select
+        />
+        <FilterSelect
           aria-label="Source"
-          className={SELECT}
+          options={[
+            { value: "", label: "Any source" },
+            ...sources.map((source) => ({ value: source, label: source })),
+          ]}
           value={filters.source ?? ""}
           onChange={(event) =>
             onChange({ ...filters, source: event.target.value || null })
           }
-        >
-          <option value="">Any source</option>
-          {sources.map((source) => (
-            <option key={source} value={source}>
-              {source}
-            </option>
-          ))}
-        </select>
+        />
       </div>
     </div>
   );

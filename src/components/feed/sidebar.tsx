@@ -24,15 +24,15 @@ export function Sidebar({
   return (
     <aside
       aria-label="Sidebar"
-      className="sticky hidden w-[220px] shrink-0 flex-col gap-6 self-start overflow-y-auto border-r px-4 py-5 md:top-[76px] md:flex md:h-[calc(100dvh-76px)] lg:w-[260px]"
+      className="sticky hidden w-[220px] shrink-0 flex-col gap-[26px] self-start overflow-y-auto border-r bg-card px-3 pt-[22px] pb-5 md:top-[76px] md:flex md:h-[calc(100dvh-76px)] lg:w-[260px] lg:px-4"
     >
-      <nav aria-label="Main" className="flex flex-col gap-1">
+      <nav aria-label="Main" className="flex flex-col gap-2.5">
         <Link
           href="/feed"
           aria-current="page"
-          className={`${NAV_ITEM} bg-secondary`}
+          className={cn(NAV_ITEM, "bg-secondary font-bold")}
         >
-          <Newspaper className="size-4" />
+          <Newspaper className="size-4 text-link" />
           News feed
         </Link>
         <button
@@ -45,8 +45,8 @@ export function Sidebar({
         </button>
       </nav>
       <div className="flex min-h-32 flex-1 flex-col gap-2">
-        <div className="flex items-center justify-between gap-2 px-3">
-          <h2 className="text-[11px] font-bold tracking-wide text-muted-foreground uppercase">
+        <div className="flex h-4 items-center justify-between gap-2 px-3">
+          <h2 className="text-[11px] font-bold tracking-wide whitespace-nowrap text-muted-foreground uppercase">
             Your watchlist
           </h2>
           <button
@@ -68,7 +68,7 @@ export function Sidebar({
           className={cn(FOCUS_RING, "min-h-0 overflow-y-auto rounded-[10px]")}
         >
           {companies.map(({ ticker, name }) => (
-            <li key={ticker} className="flex items-center gap-3 px-3 py-1.5">
+            <li key={ticker} className="flex min-h-12 items-center gap-3 px-3">
               <span
                 aria-hidden="true"
                 className="flex size-7 shrink-0 items-center justify-center rounded-full bg-secondary text-xs font-bold text-link"
@@ -87,13 +87,15 @@ export function Sidebar({
           ))}
         </ul>
       </div>
-      <div className="flex items-center gap-3 border-t px-3 pt-4">
+      <div className="flex items-center gap-3 px-3 pt-4">
         <UserInitial firstName={firstName} />
         <div className="flex min-w-0 flex-col">
           <p className="truncate text-sm font-semibold">
             {firstName?.trim() || "Your account"}
           </p>
-          <p className="text-xs text-muted-foreground">Personal workspace</p>
+          <p className="text-xs whitespace-nowrap text-muted-foreground">
+            Personal workspace
+          </p>
         </div>
       </div>
     </aside>

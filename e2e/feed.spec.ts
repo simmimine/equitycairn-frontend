@@ -236,6 +236,7 @@ test.describe("feed page", () => {
 
     await page.getByRole("button", { name: "Clear filters" }).click();
     await expect(stories(page)).toHaveCount(ALL_STORIES);
+    await expect(page.getByRole("heading", { level: 1 })).toBeFocused();
     await expect(searchBox(page)).toHaveValue("");
     await expect(
       page.getByRole("combobox", { name: "Time range" }),
@@ -359,6 +360,11 @@ test.describe("feed page", () => {
         ? page.getByRole("navigation", { name: "Tabs" })
         : page.getByRole("complementary", { name: "Coverage at a glance" });
       await expect(chrome).toHaveCSS("background-color", c.card);
+      if (!isMobile(page)) {
+        await expect(
+          page.getByRole("complementary", { name: "Sidebar" }),
+        ).toHaveCSS("background-color", c.card);
+      }
     });
   }
 });
@@ -390,6 +396,9 @@ test.describe("unusual watchlists", () => {
     await expect(page.getByRole("list", { name: "Stories" })).toHaveCount(0);
     await expect(
       page.getByRole("button", { name: "Report a ticker mismatch" }),
+    ).toHaveCount(0);
+    await expect(
+      page.getByRole("complementary", { name: "Coverage at a glance" }),
     ).toHaveCount(0);
     await expectNoSidewaysScroll(page);
   });
