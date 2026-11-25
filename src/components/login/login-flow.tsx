@@ -1,6 +1,8 @@
 "use client";
 
+import { cn } from "cn";
 import Link from "next/link";
+import { unstable_rethrow } from "next/navigation";
 import { useState, useTransition } from "react";
 
 import {
@@ -50,6 +52,16 @@ type Step =
     };
 
 const GENERIC_ERROR = "Something went wrong, please try again";
+/** An action that can't be reached (offline, say) becomes a result, not a crash. */
+async function attempt<T>(action: Promise<T>) {
+  try {
+    return await action;
+  } catch (err) {
+    unstable_rethrow(err); // a successful sign-in redirects by throwing
+    return { ok: false, error: "server_error" } as const;
+  }
+}
+
 const RATE_LIMITED =
   "Too many attempts. Please wait a few minutes and try again.";
 
@@ -106,7 +118,7 @@ function EmailCard({
           }
           setError(null);
           startTransition(async () => {
-            const result = await actions.checkEmail(email);
+            const result = await attempt(actions.checkEmail(email));
             if (result.ok) {
               const clean = email.trim().toLowerCase();
               onNext({
@@ -185,17 +197,17 @@ function CreateCard({
 
   return (
     <AuthCard title="Create your password">
-      <AuthNotice data-testid="email-chip">{email}</AuthNotice>
+      <AuthNotice data-testid="email-chip">
+        <span className="min-w-0 break-all">{email}</span>
+      </AuthNotice>
       <form
         onSubmit={(event) => {
           event.preventDefault();
           if (pending) return;
           setError(null);
           startTransition(async () => {
-            const result = await actions.createAccount(
-              email,
-              password,
-              confirm,
+            const result = await attempt(
+              actions.createAccount(email, password, confirm),
             );
             if (result.ok) {
               onNext({
@@ -285,7 +297,7 @@ function SignInCard({
           setError(null);
           startTransition(async () => {
             // On success the action redirects and never returns.
-            const result = await actions.signIn(email, password);
+            const result = await attempt(actions.signIn(email, password));
             if (result.error === "invalid_credentials") {
               setError("Email or password is incorrect");
             } else if (result.error === "unconfirmed") {
@@ -337,7 +349,7 @@ export function LoginFlow({
           title="This email isn't on the beta list yet"
           description="Join the beta and we'll let you know when it's your turn."
         >
-          <Link href="/#join" className={buttonVariants({ size: "xl" })}>
+          <Link href="/#join" className={cn(buttonVariants({ size: "xl" }))}>
             Join the beta
           </Link>
           <BackButton onClick={back} />

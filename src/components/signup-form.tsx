@@ -1,5 +1,6 @@
 "use client";
 
+import { unstable_rethrow } from "next/navigation";
 import { useActionState, useState } from "react";
 
 import { joinBeta } from "@/app/actions/join-beta";
@@ -34,7 +35,13 @@ export function SignupForm({
   const [email, setEmail] = useState("");
   const [state, formAction, pending] = useActionState(
     async (prev: JoinBetaResult | null, formData: FormData) => {
-      const result = await action(prev, formData);
+      let result: JoinBetaResult;
+      try {
+        result = await action(prev, formData);
+      } catch (err) {
+        unstable_rethrow(err); // success redirects by throwing
+        result = { ok: false, error: "server_error" };
+      }
       if (result.ok) setEmail("");
       return result;
     },

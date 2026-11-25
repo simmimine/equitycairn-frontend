@@ -293,3 +293,49 @@ test.describe("/auth/confirm", () => {
     });
   }
 });
+
+test("a very long email stays inside the card", async ({ page }) => {
+  await openFlow(page, "state=no_account");
+  await submitEmail(page, `${"a".repeat(64)}@example.com`);
+  const chip = page.getByTestId("email-chip");
+  await expect(chip).toBeVisible();
+  const spill = await chip.evaluate((el) => el.scrollWidth - el.clientWidth);
+  expect(spill).toBeLessThanOrEqual(0);
+  await expectNoSidewaysScroll(page);
+});
+
+test("the large link button matches the large buttons", async ({ page }) => {
+  await openFlow(page, "state=not_listed");
+  await submitEmail(page);
+  const link = page.getByRole("main").getByRole("link");
+  await expect(link).toHaveCSS("font-weight", "700");
+  await expect(link).toHaveCSS("border-radius", "10px");
+});
+
+for (const scheme of ["light", "dark"] as const) {
+  test(`small blue text on tinted panels is readable in ${scheme}`, async ({
+    page,
+  }) => {
+    await page.emulateMedia({ colorScheme: scheme });
+    await page.goto("/login");
+    const pill = page.getByTestId("auth-card").locator("p").first();
+    const ratio = await pill.evaluate((el) => {
+      const lum = (rgb: string) => {
+        const [r, g, b] = rgb
+          .match(/\d+/g)!
+          .slice(0, 3)
+          .map((v) => {
+            const c = Number(v) / 255;
+            return c <= 0.04045 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4;
+          });
+        return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+      };
+      const s = getComputedStyle(el);
+      const [hi, lo] = [lum(s.color), lum(s.backgroundColor)].sort(
+        (a, b) => b - a,
+      );
+      return (hi + 0.05) / (lo + 0.05);
+    });
+    expect(ratio).toBeGreaterThanOrEqual(4.5);
+  });
+}

@@ -240,3 +240,23 @@ describe("SignupForm", () => {
     expect(screen.getByLabelText(/email/i)).toHaveAttribute("id", "hero");
   });
 });
+
+describe("SignupForm when the action cannot be reached", () => {
+  afterEach(cleanup);
+
+  it("shows the generic error and keeps the email", async () => {
+    const user = userEvent.setup();
+    render(
+      <SignupForm
+        action={vi.fn().mockRejectedValue(new TypeError("offline"))}
+      />,
+    );
+    const input = screen.getByLabelText(/email/i);
+    await user.type(input, "a@b.co");
+    await user.click(screen.getByRole("button"));
+    expect(
+      await screen.findByText("Something went wrong, please try again"),
+    ).toBeInTheDocument();
+    expect(input).toHaveValue("a@b.co");
+  });
+});

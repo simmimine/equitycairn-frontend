@@ -59,7 +59,8 @@
   --popover-foreground: #071f22;
   --primary: #366fbf;
   --primary-foreground: #f4fcfd;
-  --link: #366fbf;
+  /* A shade darker than the brand blue: readable on the tinted panels too. */
+  --link: #2f62a8;
   --secondary: #d1f2f5;
   --secondary-foreground: #071f22;
   --muted: #d1f2f5;
@@ -96,7 +97,7 @@
   --primary: #366fbf;
   --primary-foreground: #f4fcfd;
   /* Brand blue is too faint for small text on the dark card. */
-  --link: #6b9ee3;
+  --link: #7aaaea;
   --secondary: #123a40;
   --secondary-foreground: #d1f2f5;
   --muted: #123a40;
@@ -105,7 +106,8 @@
   --accent-foreground: #d1f2f5;
   --destructive: oklch(0.704 0.191 22.216);
   --border: #123a40;
-  --input: #123a40;
+  /* Lighter than the card borders, so controls stay findable. */
+  --input: rgb(209 242 245 / 20%);
   --ring: #5a8fd6;
   --chart-1: #5a8fd6;
   --chart-2: #8fb4e6;

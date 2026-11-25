@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -9,7 +9,9 @@ vi.mock("@/app/actions/confirm-account", () => ({
 
 import { ConfirmForm } from "./confirm-form";
 
-beforeEach(() => confirmAccount.mockReset());
+beforeEach(() => {
+  confirmAccount.mockReset();
+});
 
 describe("ConfirmForm", () => {
   it("submits token, email and password", async () => {
@@ -43,6 +45,29 @@ describe("ConfirmForm", () => {
     expect(screen.getByRole("link", { name: /start again/i })).toHaveAttribute(
       "href",
       "/login",
+    );
+  });
+
+  it("describes the password field with the hint, then with the error", async () => {
+    confirmAccount.mockResolvedValue({ ok: false, error: "wrong_password" });
+    const view = render(<ConfirmForm tokenHash="th" email="a@example.com" />);
+    const form = within(view.container);
+    const input = form.getByLabelText("Password");
+    expect(input).toHaveAccessibleDescription(/password you chose/i);
+    await userEvent.type(input, "x");
+    await userEvent.click(form.getByRole("button", { name: /finish/i }));
+    await form.findByRole("alert");
+    expect(input).toHaveAccessibleDescription(/doesn.t match/i);
+  });
+
+  it("shows a generic error if the action cannot be reached", async () => {
+    confirmAccount.mockRejectedValue(new TypeError("offline"));
+    const view = render(<ConfirmForm tokenHash="th" email="a@example.com" />);
+    const form = within(view.container);
+    await userEvent.type(form.getByLabelText("Password"), "x");
+    await userEvent.click(form.getByRole("button", { name: /finish/i }));
+    expect(await form.findByRole("alert")).toHaveTextContent(
+      "Something went wrong, please try again.",
     );
   });
 });

@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { unstable_rethrow } from "next/navigation";
 import { useState, useTransition } from "react";
 
 import {
@@ -52,7 +53,12 @@ export function ConfirmForm({
         event.preventDefault();
         if (pending) return;
         startTransition(async () => {
-          setResult(await confirm(tokenHash, email, password));
+          try {
+            setResult(await confirm(tokenHash, email, password));
+          } catch (err) {
+            unstable_rethrow(err); // success redirects by throwing
+            setResult({ ok: false, error: "server_error" });
+          }
         });
       }}
     >
@@ -72,12 +78,12 @@ export function ConfirmForm({
               setResult(null);
             }}
             aria-invalid={result ? true : undefined}
-            aria-describedby="confirm-error"
+            aria-describedby={result ? "confirm-error" : "confirm-hint"}
           />
           {result && (
             <FieldError id="confirm-error">{message(result)}</FieldError>
           )}
-          <FieldDescription className="text-[11px]">
+          <FieldDescription id="confirm-hint" className="text-[11px]">
             Enter the password you chose when you signed up.
           </FieldDescription>
         </Field>
