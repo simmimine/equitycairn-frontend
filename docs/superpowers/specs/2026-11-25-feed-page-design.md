@@ -44,11 +44,11 @@ Source of truth: Penpot board "Feed page · Desktop + Mobile" (the four "… Fin
 
 ## Layout
 
-| Width | Layout |
-|-------|--------|
-| < 768 | phone board: compact header, bottom tab bar, centred column (max 600) |
-| 768–1279 | header with search, sidebar, stories; context panel below the stories |
-| ≥ 1280 | desktop board: sidebar, stories, context panel; block centred on very wide screens |
+| Width    | Layout                                                                             |
+| -------- | ---------------------------------------------------------------------------------- |
+| < 768    | phone board: compact header, bottom tab bar, centred column (max 600)              |
+| 768–1279 | header with search, sidebar, stories; context panel below the stories              |
+| ≥ 1280   | desktop board: sidebar, stories, context panel; block centred on very wide screens |
 
 Long watchlists (up to 50 tickers): phone ticker pills scroll sideways, wider screens wrap,
 the sidebar scrolls.

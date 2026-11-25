@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { render, screen, within } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const requireUser = vi.fn();
@@ -29,7 +29,7 @@ describe("FeedContent", () => {
     await expect(FeedContent()).rejects.toThrow("NEXT_REDIRECT:/onboarding");
   });
 
-  it("shows the watchlist tickers for an onboarded user", async () => {
+  it("shows the feed for an onboarded user's watchlist", async () => {
     getProfile.mockResolvedValue({
       firstName: "Ann",
       onboardedAt: "2026-11-24T00:00:00Z",
@@ -37,22 +37,35 @@ describe("FeedContent", () => {
     });
     render(await FeedContent());
     expect(
-      screen.getByRole("heading", { name: "News for your watchlist" }),
+      screen.getByRole("heading", {
+        level: 1,
+        name: "News for your watchlist",
+      }),
     ).toBeInTheDocument();
-    expect(screen.getByText("AAPL")).toBeInTheDocument();
-    expect(screen.getByText("MSFT")).toBeInTheDocument();
+    const watchlist = screen.getByRole("list", { name: "Your watchlist" });
+    expect(within(watchlist).getByText("AAPL")).toBeInTheDocument();
+    expect(within(watchlist).getByText("MSFT")).toBeInTheDocument();
+    expect(within(watchlist).getByText("Apple Inc.")).toBeInTheDocument();
+    expect(screen.getByText("Ann")).toBeInTheDocument();
     expect(
-      screen.getByRole("button", { name: /sign out/i }),
+      within(screen.getByRole("list", { name: "Stories" })).getAllByRole(
+        "article",
+      ),
+    ).toHaveLength(4);
+    expect(
+      screen.getByRole("button", { name: "Account menu" }),
     ).toBeInTheDocument();
   });
 
   it("shows an empty state with no tickers", async () => {
     getProfile.mockResolvedValue({
-      firstName: "Ann",
+      firstName: null,
       onboardedAt: "2026-11-24T00:00:00Z",
       tickers: [],
     });
     render(await FeedContent());
-    expect(screen.getByText(/no companies yet/i)).toBeInTheDocument();
+    expect(
+      screen.getByRole("heading", { name: "No companies yet" }),
+    ).toBeInTheDocument();
   });
 });

@@ -3,7 +3,13 @@
 import { cn } from "cn";
 import { Search } from "lucide-react";
 import Link from "next/link";
-import { useCallback, useEffect, useRef, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+} from "react";
 import { flushSync } from "react-dom";
 
 import { Button } from "@/components/ui/button";
@@ -31,6 +37,9 @@ export function AppHeader({
   // Only phones hide the field; from `md` it is always on screen.
   const [open, setOpen] = useState(false);
   const shown = open || query !== "";
+  // A hidden route keeps its state (Activity): come back with search closed.
+  // The query is a filter and stays, which keeps the field shown if set.
+  useLayoutEffect(() => () => setOpen(false), []);
 
   const openSearch = useCallback(() => {
     // A hidden field cannot take focus, so show it before focusing, still

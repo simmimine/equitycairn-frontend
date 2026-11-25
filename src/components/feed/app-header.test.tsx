@@ -1,5 +1,5 @@
 import { fireEvent, render, screen } from "@testing-library/react";
-import { useState } from "react";
+import { Activity, useState } from "react";
 import { describe, expect, it, vi } from "vitest";
 
 import { AppHeader } from "./app-header";
@@ -166,5 +166,19 @@ describe("AppHeader", () => {
       "md:pointer-fine:text-sm",
     );
     expect(input()).not.toHaveClass("md:text-sm");
+  });
+
+  it("comes back from a hidden route with search closed", () => {
+    const view = (mode: "visible" | "hidden") => (
+      <Activity mode={mode}>
+        <Harness />
+      </Activity>
+    );
+    const { rerender } = render(view("visible"));
+    fireEvent.click(toggle());
+    expanded(true);
+    rerender(view("hidden"));
+    rerender(view("visible"));
+    expanded(false);
   });
 });

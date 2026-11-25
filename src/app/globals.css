@@ -191,3 +191,17 @@
     min-height: calc(100svh / 1.5 - 73px);
   }
 }
+
+/* Feed page (set by FeedApp while on screen): a focused element scrolled into
+   view stays clear of the sticky header and, on phones, the fixed tab bar. */
+.feed-scroll-padding {
+  scroll-padding-top: 64px;
+  scroll-padding-bottom: calc(66px + env(safe-area-inset-bottom));
+}
+
+@media (min-width: 768px) {
+  .feed-scroll-padding {
+    scroll-padding-top: 76px;
+    scroll-padding-bottom: 0;
+  }
+}
