@@ -163,3 +163,31 @@
     cursor: not-allowed;
   }
 }
+
+/* Home page: everything before the video is at least one screen tall (less the
+   header), so the video always starts below the fold. */
+.first-screen {
+  min-height: calc(100svh - 62px);
+}
+
+@media (min-width: 768px) {
+  .first-screen {
+    min-height: calc(100svh - 73px);
+  }
+}
+
+/* Very large screens: scale the desktop board up so it fills the window rather
+   than sitting small above a band of empty space. */
+@media (min-width: 2200px) and (min-height: 1200px) {
+  .home {
+    zoom: 1.5;
+  }
+
+  .home .first-screen {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    /* Viewport units are zoomed too, so divide them back. */
+    min-height: calc(100svh / 1.5 - 73px);
+  }
+}

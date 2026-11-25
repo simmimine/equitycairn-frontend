@@ -3,7 +3,7 @@ title: "Sections the design boards lack stay below the designed home page, style
 author: Simeon
 date: 2026-11-25
 branch: feature/design-refresh
-cost: { minutes: 14, tokens: 213276 }
+cost: { minutes: 23, tokens: 251761 }
 id: l-92a27578
 scope: repo
 status: active
@@ -26,6 +26,7 @@ The owner chose "board first, then the extras": How it works, FAQ, trust points 
 Write test setup hooks with braces so they return nothing.
 Sign-up and login forms wrap server action calls in one shared helper. It lets redirects through, logs only the error name (messages can carry what the user typed), and reloads the page when the server no longer recognises the action.
 The designs exist only at 390 and 1440 wide. Below the tablet breakpoint the phone layout is a centred column with a maximum width. From tablet up the hero is two columns like the desktop board, and the three feature tiles sit under both columns until the screen is wide enough to hold them in the left one.
+The site never imports the video source; it serves copies of the rendered files, so re-rendering means copying them across. The owner wants the content before the video to fill the screen and the video to start below the fold at every size; on very large screens the page is scaled up rather than redesigned.
 
 ## Watch out
 A link to an in-page anchor that also focuses a field loses the focus: the browser's own jump runs after the click handler. jsdom unit tests passed while real browsers did not, so focus again on the next tick.
@@ -38,6 +39,9 @@ In the code: `beforeEach` in src/components/login/confirm-form.test.tsx.
 Tests at just the two design widths passed while most widths in between looked broken. Layout changes need checking across widths.
 
 In the code: `CONTAINER` in src/components/brand/styles.ts, src/components/landing/hero.tsx, e2e/breakpoints.spec.ts.
+Under CSS zoom, viewport height units are zoomed too and must be divided back. The existing render script produces only the MP4; the WebM is converted separately.
+
+In the code: src/components/landing/home-video.tsx, public/videos/, remotion/home/, `.first-screen` and `.home` in src/app/globals.css.
 
 ## Tried and ruled out
 The test for an unreachable server action kept failing with the mock's own error, which looked like the component failing to catch it. The component was fine.
