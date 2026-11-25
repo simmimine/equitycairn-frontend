@@ -5,6 +5,7 @@ import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { FieldError } from "@/components/ui/field";
 import { Spinner } from "@/components/ui/spinner";
+import { attempt } from "@/lib/attempt";
 
 export type CooldownResult =
   | { ok: true; retryAfterSeconds: number }
@@ -55,17 +56,15 @@ export function CooldownButton({
     setError(false);
     setSent(false);
     try {
-      const result = await onResend();
+      const result = await attempt(() => onResend());
       if (result.ok) {
         setSent(true);
         restart(result.retryAfterSeconds);
-      } else if (result.retryAfterSeconds) {
+      } else if ("retryAfterSeconds" in result && result.retryAfterSeconds) {
         restart(result.retryAfterSeconds);
       } else {
         setError(true);
       }
-    } catch {
-      setError(true);
     } finally {
       inFlight.current = false;
       setPending(false);

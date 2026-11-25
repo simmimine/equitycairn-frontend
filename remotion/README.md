@@ -6,6 +6,9 @@ All Remotion compositions, source artwork, and rendered videos live here.
 - `pnpm video:studio` opens Remotion Studio.
 - `pnpm video:render:home` renders the homepage video to
   `remotion/home/output/home-watchlist.mp4`.
+- `pnpm video:publish:home` (needs FFmpeg) converts that render to WebM and
+  copies both videos and the poster into `public/`. Run it after every render, or
+  the website keeps serving the old video.
 
 Page-specific Remotion projects live in their own folder. The homepage video
 keeps its composition, source artwork, public assets, and render output in

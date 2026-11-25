@@ -9,8 +9,8 @@ Create short, polished product films that communicate EquityCairn's value clearl
 
 ## Repo boundaries
 
-- Keep video compositions, artwork, posters, and rendered outputs inside `remotion/`: source in `remotion/videos/`, static assets in `remotion/public/`, renders in `remotion/output/`.
-- Use pnpm and the existing `video:setup`, `video:studio`, and `video:render:home` scripts. Add new compositions to the Remotion root and provide a suitable render script when needed.
+- Keep video compositions, artwork, posters, and rendered outputs inside `remotion/`: one folder per page (the homepage is `remotion/home/`): source in `remotion/<page>/videos/`, static assets in `remotion/<page>/public/`, renders in `remotion/<page>/output/`.
+- Use pnpm and the existing `video:setup`, `video:studio`, `video:render:home` and `video:publish:home` scripts. Add new compositions to the Remotion root and provide a suitable render script when needed.
 - The Remotion project is excluded from the Next.js TypeScript and ESLint projects. Do not import its source into the website.
 - Do not embed a video in the homepage or edit Penpot designs unless the user explicitly asks. Root package/config changes are for Remotion tooling only.
 - Follow this repository's `AGENTS.md` and Trail workflow before changing code. Inspect the current composition and render before refining an existing video.
@@ -29,11 +29,11 @@ Create short, polished product films that communicate EquityCairn's value clearl
 1. Identify the target viewer, desired takeaway, product truth, and any approved CTA. Ask only when a missing product claim or core message cannot be inferred safely.
 2. Write a compact beat outline before animating. Prioritize one main idea over a feature list.
 3. Build the composition and supporting artwork in `remotion/`, using frame-based timing and purposeful easing. Keep the product moment and key copy visible long enough to understand.
-4. Render the requested MP4 and poster into `remotion/output/` and `remotion/public/` respectively. Do not stop at a preview composition when the brief asks for a finished video.
-5. Convert each rendered MP4 to WebM in `remotion/output/` with FFmpeg, preserving audio when present and avoiding overwrites:
+4. Render the requested MP4 and poster into `remotion/<page>/output/` and `remotion/<page>/public/` respectively. Do not stop at a preview composition when the brief asks for a finished video.
+5. Convert each rendered MP4 to WebM in `remotion/<page>/output/` with FFmpeg, preserving audio when present and avoiding overwrites:
 
    ```bash
-   ffmpeg -n -i remotion/output/<video-name>.mp4 -map 0:v:0 -map '0:a?' -c:v libvpx-vp9 -crf 30 -b:v 0 -c:a libopus -b:a 128k remotion/output/<video-name>.webm
+   ffmpeg -n -i remotion/<page>/output/<video-name>.mp4 -map 0:v:0 -map '0:a?' -c:v libvpx-vp9 -crf 30 -b:v 0 -c:a libopus -b:a 128k remotion/<page>/output/<video-name>.webm
    ```
 
    If FFmpeg is unavailable or the VP9 encoder is missing, report that WebM conversion is blocked; do not silently omit the requested format.

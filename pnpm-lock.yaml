@@ -268,6 +268,9 @@ importers:
       "@remotion/cli":
         specifier: 4.0.547
         version: 4.0.547(@swc/helpers@0.5.23)(lightningcss@1.33.0)(postcss@8.5.33)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(supports-color@7.2.0)(typescript@5.9.3)
+      "@remotion/google-fonts":
+        specifier: 4.0.547
+        version: 4.0.547(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
       "@remotion/player":
         specifier: 4.0.547
         version: 4.0.547(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
@@ -1617,6 +1620,12 @@ packages:
     resolution:
       {
         integrity: sha512-+V8QmazjpO0oRmx9DnJ/sgbn84+SnZ9a7ZNjoLNJAHOyof3zjAEnIY4MfHpR5UxkxpAvYvflD8z/WehRdXSDMA==,
+      }
+
+  "@remotion/google-fonts@4.0.547":
+    resolution:
+      {
+        integrity: sha512-G4GDg2903D8H270dFWKRnGVNaM3nXH3MxH9aKcZnY89kQN9xTWicIdFBjXCp84ishhzuXtd9VP1pqmw1/Q1S+A==,
       }
 
   "@remotion/licensing@4.0.547":
@@ -7945,6 +7954,13 @@ snapshots:
     dependencies:
       "@remotion/captions": 4.0.547
       zod: 4.6.7
+
+  "@remotion/google-fonts@4.0.547(react-dom@19.3.0(react@19.3.0))(react@19.3.0)":
+    dependencies:
+      remotion: 4.0.547(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
+    transitivePeerDependencies:
+      - react
+      - react-dom
 
   "@remotion/licensing@4.0.547": {}
 

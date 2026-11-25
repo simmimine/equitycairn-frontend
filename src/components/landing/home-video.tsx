@@ -6,36 +6,40 @@ import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 
 /**
- * Full-width product animation. Rendered from `remotion/home`; after rendering
- * again, copy the output into `public/videos`.
+ * Full-width product animation, rendered from `remotion/home` and published into
+ * `public/` with `pnpm video:publish:home`.
  */
 export function HomeVideo() {
   const video = useRef<HTMLVideoElement>(null);
   const [playing, setPlaying] = useState(false);
-  // Set once the visitor presses the button: scrolling must not undo it.
-  const chosen = useRef(false);
+  // The visitor's last choice; null until they press the button.
+  const choice = useRef<boolean | null>(null);
 
   useEffect(() => {
     const el = video.current;
     if (!el || typeof IntersectionObserver === "undefined") return;
-    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    const calm = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     // Plays only while on screen, so nothing downloads or moves above the fold.
     const observer = new IntersectionObserver(
-      ([entry]) => {
-        if (chosen.current) return;
-        if (entry.isIntersecting) el.play().catch(() => undefined);
-        else el.pause();
+      (entries) => {
+        // The last entry is the current state.
+        if (!entries.at(-1)?.isIntersecting) el.pause();
+        else if (choice.current ?? !calm) el.play().catch(() => undefined);
       },
       { threshold: 0.25 },
     );
     observer.observe(el);
-    return () => observer.disconnect();
+    return () => {
+      observer.disconnect();
+      // Next may hide this page rather than remove it.
+      el.pause();
+    };
   }, []);
 
   function toggle() {
     const el = video.current;
     if (!el) return;
-    chosen.current = true;
+    choice.current = el.paused;
     if (el.paused) el.play().catch(() => undefined);
     else el.pause();
   }

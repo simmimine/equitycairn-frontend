@@ -139,3 +139,30 @@ for (const height of [1440, 1300]) {
     ).toBeLessThanOrEqual(0);
   });
 }
+
+test("pauses off screen even after pressing Play, and resumes on return", async ({
+  page,
+}) => {
+  await page.emulateMedia({ reducedMotion: "reduce" });
+  await page.goto("/");
+  await video(page).scrollIntoViewIfNeeded();
+  await section(page).getByRole("button", { name: "Play video" }).click();
+  await expect.poll(() => paused(page)).toBe(false);
+  await page.evaluate(() => window.scrollTo(0, 0));
+  await expect.poll(() => paused(page)).toBe(true);
+  await video(page).scrollIntoViewIfNeeded();
+  await expect.poll(() => paused(page)).toBe(false);
+});
+
+test("stops when the visitor moves to another page", async ({ page }) => {
+  await page.goto("/");
+  await video(page).scrollIntoViewIfNeeded();
+  await expect.poll(() => paused(page)).toBe(false);
+  // Hold on to the element: the router may hide the page rather than remove it.
+  const element = (await video(page).elementHandle())!;
+  await page.getByRole("banner").getByRole("link", { name: "Log in" }).click();
+  await expect(page).toHaveURL(/\/login$/);
+  await expect
+    .poll(() => element.evaluate((v) => (v as HTMLVideoElement).paused))
+    .toBe(true);
+});

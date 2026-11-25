@@ -8,6 +8,7 @@
     "video:setup": "remotion browser ensure",
     "video:studio": "remotion studio remotion/index.ts",
     "video:render:home": "remotion render remotion/index.ts HomeWatchlistVideo remotion/home/output/home-watchlist.mp4 --public-dir=remotion/home/public",
+    "video:publish:home": "ffmpeg -y -i remotion/home/output/home-watchlist.mp4 -c:v libvpx-vp9 -crf 30 -b:v 0 -an remotion/home/output/home-watchlist.webm && cp remotion/home/output/home-watchlist.mp4 remotion/home/output/home-watchlist.webm public/videos/ && ffmpeg -y -ss 7 -i remotion/home/output/home-watchlist.mp4 -frames:v 1 -q:v 3 public/images/home-watchlist-poster.jpg",
     "start": "next start",
     "lint": "eslint",
     "typecheck": "tsc --noEmit",
@@ -38,6 +39,7 @@
   "devDependencies": {
     "@playwright/test": "^1.65.1",
     "@remotion/cli": "4.0.547",
+    "@remotion/google-fonts": "4.0.547",
     "@remotion/player": "4.0.547",
     "@tailwindcss/turbopack": "4.3.3",
     "@testing-library/jest-dom": "^8.0.0",

@@ -1,3 +1,4 @@
+import { loadFont } from "@remotion/google-fonts/Inter";
 import {
   AbsoluteFill,
   Easing,
@@ -6,6 +7,12 @@ import {
   staticFile,
   useCurrentFrame,
 } from "remotion";
+
+// Bundled with the render, so it doesn't depend on the machine's fonts.
+const { fontFamily } = loadFont("normal", {
+  weights: ["400", "500", "600", "700"],
+  subsets: ["latin"],
+});
 
 const C = {
   mist: "#F4FCFD",
@@ -160,10 +167,65 @@ function StoryRow({
   );
 }
 
+function Fragments({ frame }: { frame: number }) {
+  return (
+    <>
+      <CoverageFragment
+        frame={frame}
+        start={0}
+        x={1000}
+        y={160}
+        width={220}
+        rotate={-5}
+        label="Source A"
+      />
+      <CoverageFragment
+        frame={frame}
+        start={8}
+        x={1220}
+        y={302}
+        width={238}
+        rotate={4}
+        label="Company coverage"
+      />
+      <CoverageFragment
+        frame={frame}
+        start={15}
+        x={1045}
+        y={480}
+        width={204}
+        rotate={-3}
+        label="Source B"
+      />
+      <CoverageFragment
+        frame={frame}
+        start={22}
+        x={1280}
+        y={612}
+        width={202}
+        rotate={5}
+        label="Company coverage"
+      />
+      <CoverageFragment
+        frame={frame}
+        start={29}
+        x={792}
+        y={104}
+        width={196}
+        rotate={2}
+        label="Source C"
+      />
+    </>
+  );
+}
+
 export function HomeWatchlistVideo() {
   const frame = useCurrentFrame();
-  const headline = enter(frame, 3, 22);
-  const card = enter(frame, 69, 101);
+  // The last second returns to the first frame, so the loop has no jump.
+  const outro = enter(frame, 216, 239);
+  const headline = enter(frame, 3, 22) * (1 - outro);
+  const assembled = enter(frame, 69, 101);
+  const card = assembled * (1 - outro);
   const signal = enter(frame, 50, 80);
   const glow = interpolate(frame, [70, 106, 142], [0, 1, 0], {
     extrapolateLeft: "clamp",
@@ -177,7 +239,7 @@ export function HomeWatchlistVideo() {
         overflow: "hidden",
         backgroundColor: C.mist,
         color: C.teal,
-        fontFamily: 'Inter, "Helvetica Neue", Arial, sans-serif',
+        fontFamily: fontFamily,
       }}
     >
       <Img
@@ -229,55 +291,11 @@ export function HomeWatchlistVideo() {
         style={{
           position: "absolute",
           inset: 0,
-          opacity: 1 - card,
+          opacity: 1 - assembled,
           pointerEvents: "none",
         }}
       >
-        <CoverageFragment
-          frame={frame}
-          start={0}
-          x={1000}
-          y={160}
-          width={220}
-          rotate={-5}
-          label="Source A"
-        />
-        <CoverageFragment
-          frame={frame}
-          start={8}
-          x={1220}
-          y={302}
-          width={238}
-          rotate={4}
-          label="Company coverage"
-        />
-        <CoverageFragment
-          frame={frame}
-          start={15}
-          x={1045}
-          y={480}
-          width={204}
-          rotate={-3}
-          label="Source B"
-        />
-        <CoverageFragment
-          frame={frame}
-          start={22}
-          x={1280}
-          y={612}
-          width={202}
-          rotate={5}
-          label="Company coverage"
-        />
-        <CoverageFragment
-          frame={frame}
-          start={29}
-          x={792}
-          y={104}
-          width={196}
-          rotate={2}
-          label="Source C"
-        />
+        <Fragments frame={frame} />
         <div
           style={{
             position: "absolute",
@@ -299,6 +317,10 @@ export function HomeWatchlistVideo() {
           </span>
         </div>
       </div>
+
+      <AbsoluteFill style={{ opacity: outro }}>
+        <Fragments frame={0} />
+      </AbsoluteFill>
 
       <div
         style={{

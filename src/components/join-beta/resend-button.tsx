@@ -6,6 +6,7 @@ import { resendVerification } from "@/app/actions/resend-verification";
 import { Button } from "@/components/ui/button";
 import { FieldError } from "@/components/ui/field";
 import { Spinner } from "@/components/ui/spinner";
+import { attempt } from "@/lib/attempt";
 import type { ResendResult } from "@/lib/signup/types";
 
 const SUCCESS_MESSAGE = "If your address is on the list, we've sent a new link";
@@ -58,7 +59,7 @@ export function ResendButton({
     setError(false);
     setSent(false);
     try {
-      const result = await resend(token);
+      const result = await attempt(() => resend(token));
       if (result.ok) {
         setSent(true);
         restart(result.retryAfterSeconds);
@@ -67,8 +68,6 @@ export function ResendButton({
       } else {
         setError(true);
       }
-    } catch {
-      setError(true);
     } finally {
       inFlight.current = false;
       setPending(false);
