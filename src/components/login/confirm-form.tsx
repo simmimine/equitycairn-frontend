@@ -1,7 +1,6 @@
 "use client";
 
 import Link from "next/link";
-import { unstable_rethrow } from "next/navigation";
 import { useState, useTransition } from "react";
 
 import {
@@ -19,6 +18,7 @@ import {
 import { INPUT } from "@/components/brand/styles";
 import { Input } from "@/components/ui/input";
 import { Spinner } from "@/components/ui/spinner";
+import { attempt } from "@/lib/attempt";
 import { cn } from "@/lib/utils";
 
 function message(result: ConfirmAccountResult): string {
@@ -46,6 +46,7 @@ export function ConfirmForm({
   const [password, setPassword] = useState("");
   const [result, setResult] = useState<ConfirmAccountResult | null>(null);
   const [pending, startTransition] = useTransition();
+  const wrong = result?.error === "wrong_password";
 
   return (
     <form
@@ -53,17 +54,12 @@ export function ConfirmForm({
         event.preventDefault();
         if (pending) return;
         startTransition(async () => {
-          try {
-            setResult(await confirm(tokenHash, email, password));
-          } catch (err) {
-            unstable_rethrow(err); // success redirects by throwing
-            setResult({ ok: false, error: "server_error" });
-          }
+          setResult(await attempt(() => confirm(tokenHash, email, password)));
         });
       }}
     >
       <FieldGroup>
-        <Field data-invalid={result ? true : undefined}>
+        <Field data-invalid={wrong || undefined}>
           <FieldLabel htmlFor="confirm-password">Password</FieldLabel>
           <Input
             id="confirm-password"
@@ -77,7 +73,7 @@ export function ConfirmForm({
               setPassword(event.target.value);
               setResult(null);
             }}
-            aria-invalid={result ? true : undefined}
+            aria-invalid={wrong || undefined}
             aria-describedby={result ? "confirm-error" : "confirm-hint"}
           />
           {result && (

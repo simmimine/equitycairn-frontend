@@ -1,6 +1,5 @@
 "use client";
 
-import { unstable_rethrow } from "next/navigation";
 import { useActionState, useState } from "react";
 
 import { joinBeta } from "@/app/actions/join-beta";
@@ -14,6 +13,7 @@ import {
 import { INPUT } from "@/components/brand/styles";
 import { Input } from "@/components/ui/input";
 import { Spinner } from "@/components/ui/spinner";
+import { attempt } from "@/lib/attempt";
 import { HONEYPOT_FIELD } from "@/lib/signup/honeypot";
 import { parseEmail } from "@/lib/signup/email";
 import type { JoinBetaResult } from "@/lib/signup/types";
@@ -35,13 +35,9 @@ export function SignupForm({
   const [email, setEmail] = useState("");
   const [state, formAction, pending] = useActionState(
     async (prev: JoinBetaResult | null, formData: FormData) => {
-      let result: JoinBetaResult;
-      try {
-        result = await action(prev, formData);
-      } catch (err) {
-        unstable_rethrow(err); // success redirects by throwing
-        result = { ok: false, error: "server_error" };
-      }
+      const result: JoinBetaResult = await attempt(() =>
+        action(prev, formData),
+      );
       if (result.ok) setEmail("");
       return result;
     },

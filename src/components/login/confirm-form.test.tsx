@@ -69,5 +69,7 @@ describe("ConfirmForm", () => {
     expect(await form.findByRole("alert")).toHaveTextContent(
       "Something went wrong, please try again.",
     );
+    // The request failed, not the password.
+    expect(form.getByLabelText("Password")).not.toHaveAttribute("aria-invalid");
   });
 });

@@ -2,7 +2,6 @@
 
 import { cn } from "cn";
 import Link from "next/link";
-import { unstable_rethrow } from "next/navigation";
 import { useState, useTransition } from "react";
 
 import {
@@ -22,6 +21,7 @@ import {
 } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { Spinner } from "@/components/ui/spinner";
+import { attempt } from "@/lib/attempt";
 import { parseEmail } from "@/lib/signup/email";
 
 import { CooldownButton } from "./cooldown-button";
@@ -52,16 +52,6 @@ type Step =
     };
 
 const GENERIC_ERROR = "Something went wrong, please try again";
-/** An action that can't be reached (offline, say) becomes a result, not a crash. */
-async function attempt<T>(action: Promise<T>) {
-  try {
-    return await action;
-  } catch (err) {
-    unstable_rethrow(err); // a successful sign-in redirects by throwing
-    return { ok: false, error: "server_error" } as const;
-  }
-}
-
 const RATE_LIMITED =
   "Too many attempts. Please wait a few minutes and try again.";
 
@@ -118,7 +108,7 @@ function EmailCard({
           }
           setError(null);
           startTransition(async () => {
-            const result = await attempt(actions.checkEmail(email));
+            const result = await attempt(() => actions.checkEmail(email));
             if (result.ok) {
               const clean = email.trim().toLowerCase();
               onNext({
@@ -206,7 +196,7 @@ function CreateCard({
           if (pending) return;
           setError(null);
           startTransition(async () => {
-            const result = await attempt(
+            const result = await attempt(() =>
               actions.createAccount(email, password, confirm),
             );
             if (result.ok) {
@@ -297,7 +287,7 @@ function SignInCard({
           setError(null);
           startTransition(async () => {
             // On success the action redirects and never returns.
-            const result = await attempt(actions.signIn(email, password));
+            const result = await attempt(() => actions.signIn(email, password));
             if (result.error === "invalid_credentials") {
               setError("Email or password is incorrect");
             } else if (result.error === "unconfirmed") {
@@ -398,7 +388,7 @@ export function LoginFlow({
           icon="mail"
         >
           <AuthNotice>
-            <span className="min-w-0 break-all">
+            <span className="min-w-0 wrap-anywhere">
               Account confirmation link sent to {step.email}.
             </span>
           </AuthNotice>
