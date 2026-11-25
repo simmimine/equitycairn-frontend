@@ -1,4 +1,5 @@
-import { act, render, screen } from "@testing-library/react";
+import { act, fireEvent, render, screen, within } from "@testing-library/react";
+import { UnrecognizedActionError } from "next/dist/client/components/unrecognized-action-error";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -17,7 +18,9 @@ describe("CooldownButton", () => {
       vi.advanceTimersByTime(3100);
     });
     expect(screen.getByRole("button")).toBeEnabled();
-    expect(screen.getByRole("button")).toHaveTextContent("Re-send email");
+    expect(screen.getByRole("button")).toHaveTextContent(
+      "Resend confirmation email",
+    );
   });
 
   it("restarts the countdown from the server's retryAfterSeconds", async () => {
@@ -33,5 +36,27 @@ describe("CooldownButton", () => {
     expect(
       await screen.findByRole("button", { name: /re-send available in 0:42/i }),
     ).toBeDisabled();
+  });
+});
+
+describe("CooldownButton in a tab older than the deployment", () => {
+  it("reloads instead of failing forever", async () => {
+    const reload = vi.fn();
+    vi.stubGlobal("location", { reload });
+    vi.spyOn(console, "error").mockImplementation(() => {});
+    const view = render(
+      <CooldownButton
+        initialCooldownSeconds={0}
+        onResend={async () => {
+          throw new UnrecognizedActionError("gone");
+        }}
+      />,
+    );
+    await act(async () => {
+      fireEvent.click(within(view.container).getByRole("button"));
+    });
+    expect(reload).toHaveBeenCalledTimes(1);
+    vi.unstubAllGlobals();
+    vi.restoreAllMocks();
   });
 });

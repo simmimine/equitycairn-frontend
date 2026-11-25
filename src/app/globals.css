@@ -7,7 +7,8 @@
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
+  --font-sans: var(--font-inter);
+  --color-link: var(--link);
   --font-mono: var(--font-geist-mono);
   --font-heading: var(--font-sans);
   --color-sidebar-ring: var(--sidebar-ring);
@@ -58,6 +59,8 @@
   --popover-foreground: #071f22;
   --primary: #366fbf;
   --primary-foreground: #f4fcfd;
+  /* A shade darker than the brand blue: readable on the tinted panels too. */
+  --link: #2f62a8;
   --secondary: #d1f2f5;
   --secondary-foreground: #071f22;
   --muted: #d1f2f5;
@@ -93,6 +96,8 @@
   --popover-foreground: #f4fcfd;
   --primary: #366fbf;
   --primary-foreground: #f4fcfd;
+  /* Brand blue is too faint for small text on the dark card. */
+  --link: #7aaaea;
   --secondary: #123a40;
   --secondary-foreground: #d1f2f5;
   --muted: #123a40;
@@ -100,7 +105,8 @@
   --accent: #123a40;
   --accent-foreground: #d1f2f5;
   --destructive: oklch(0.704 0.191 22.216);
-  --border: rgb(209 242 245 / 14%);
+  --border: #123a40;
+  /* Lighter than the card borders, so controls stay findable. */
   --input: rgb(209 242 245 / 20%);
   --ring: #5a8fd6;
   --chart-1: #5a8fd6;
@@ -155,5 +161,33 @@
   :disabled,
   [aria-disabled="true"] {
     cursor: not-allowed;
+  }
+}
+
+/* Home page: everything before the video is at least one screen tall (less the
+   header), so the video always starts below the fold. */
+.first-screen {
+  min-height: calc(100svh - 62px);
+}
+
+@media (min-width: 768px) {
+  .first-screen {
+    min-height: calc(100svh - 73px);
+  }
+}
+
+/* Very large screens: scale the desktop board up so it fills the window rather
+   than sitting small above a band of empty space. */
+@media (min-width: 2200px) and (min-height: 1200px) {
+  .home {
+    zoom: 1.5;
+  }
+
+  .home .first-screen {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    /* Viewport units are zoomed too, so divide them back. */
+    min-height: calc(100svh / 1.5 - 73px);
   }
 }

@@ -19,16 +19,15 @@ export default defineConfig({
   projects: [
     { name: "chromium", use: { ...devices["Desktop Chrome"] } },
     {
-      // Onboarding is the one flow designed mobile-first; run it on a phone too.
+      // Every screen has a phone design, so every spec runs on a phone too.
       name: "mobile",
-      testMatch: /onboarding\.spec\.ts/,
       use: { ...devices["Pixel 7"] },
     },
   ],
   webServer: {
     command: `pnpm dev --port ${port}`,
     url: `http://localhost:${port}`,
-    env: { E2E_FAKE_ONBOARDING: "1" },
+    env: { E2E_FAKE_ONBOARDING: "1", E2E_FAKE_AUTH: "1" },
     reuseExistingServer: !process.env.CI,
     timeout: 120_000,
   },

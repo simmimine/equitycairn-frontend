@@ -14,28 +14,30 @@ describe("Home", () => {
     expect(
       screen.getByRole("heading", {
         level: 1,
-        name: "The market news that matters to your watchlist.",
+        name: "Know what matters across your watchlist.",
       }),
     ).toBeInTheDocument();
   });
 
   it("offers the beta sign-up form twice", () => {
     render(<Home />);
-    const inputs = screen.getAllByRole("textbox", { name: "Email" });
+    const inputs = screen.getAllByRole("textbox", { name: "Email address" });
     expect(inputs.map((input) => input.id)).toEqual([
       "hero-email",
       "cta-email",
     ]);
   });
 
-  it("labels the feed preview as a sample", () => {
+  it("labels the feed preview as illustrative", () => {
     render(<Home />);
-    expect(screen.getByText("Sample")).toBeInTheDocument();
+    expect(screen.getByText(/illustrative stories/i)).toBeInTheDocument();
   });
 
   it("states that it is not investment advice", () => {
     render(<Home />);
-    expect(screen.getByText(/not investment advice/i)).toBeInTheDocument();
+    expect(
+      screen.getByText(/doesn.t provide investment advice/i),
+    ).toBeInTheDocument();
   });
 
   it("makes no real-time or all-news claims", () => {

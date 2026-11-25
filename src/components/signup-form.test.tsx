@@ -62,7 +62,7 @@ describe("SignupForm", () => {
     const button = await screen.findByRole("button");
     await waitFor(() => expect(button).toBeDisabled());
     expect(button).toHaveAttribute("aria-busy", "true");
-    expect(button).toHaveAccessibleName("Join the beta");
+    expect(button).toHaveAccessibleName("Request beta access");
     expect(screen.getByLabelText(/email/i)).toHaveAttribute("readonly");
     const spinner = button.querySelector('[data-slot="spinner"]');
     expect(spinner).not.toBeNull();
@@ -238,5 +238,25 @@ describe("SignupForm", () => {
   it("uses the id prop for unique input ids", () => {
     render(<SignupForm id="hero" />);
     expect(screen.getByLabelText(/email/i)).toHaveAttribute("id", "hero");
+  });
+});
+
+describe("SignupForm when the action cannot be reached", () => {
+  afterEach(cleanup);
+
+  it("shows the generic error and keeps the email", async () => {
+    const user = userEvent.setup();
+    render(
+      <SignupForm
+        action={vi.fn().mockRejectedValue(new TypeError("offline"))}
+      />,
+    );
+    const input = screen.getByLabelText(/email/i);
+    await user.type(input, "a@b.co");
+    await user.click(screen.getByRole("button"));
+    expect(
+      await screen.findByText("Something went wrong, please try again"),
+    ).toBeInTheDocument();
+    expect(input).toHaveValue("a@b.co");
   });
 });

@@ -1,15 +1,5 @@
-import Link from "next/link";
-
-import { JoinBetaShell } from "@/components/join-beta/join-beta-shell";
-import { ConfirmForm } from "@/components/login/confirm-form";
-import { buttonVariants } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { ConfirmScreen } from "@/components/login/confirm-screen";
+import { LinkScreen } from "@/components/join-beta/link-screen";
 import { parseEmail } from "@/lib/signup/email";
 
 type Params = { token_hash?: string | string[]; email?: string | string[] };
@@ -35,41 +25,14 @@ export async function ConfirmContent({
 
   if (!tokenHash || !email) {
     return (
-      <JoinBetaShell>
-        <Card>
-          <CardHeader>
-            <CardTitle>
-              <h1>This link isn&apos;t valid</h1>
-            </CardTitle>
-            <CardDescription>
-              Create your account again and we&apos;ll send a fresh link.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Link href="/login" className={buttonVariants()}>
-              Back to log in
-            </Link>
-          </CardContent>
-        </Card>
-      </JoinBetaShell>
+      <LinkScreen
+        title="This link isn't valid"
+        description="Create your account again and we'll send a fresh link."
+        href="/login"
+        action="Back to log in"
+      />
     );
   }
 
-  return (
-    <JoinBetaShell>
-      <Card>
-        <CardHeader>
-          <CardTitle>
-            <h1>Confirm your account</h1>
-          </CardTitle>
-          <CardDescription>
-            One last step to make sure it&apos;s you.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <ConfirmForm tokenHash={tokenHash} email={email} />
-        </CardContent>
-      </Card>
-    </JoinBetaShell>
-  );
+  return <ConfirmScreen tokenHash={tokenHash} email={email} />;
 }

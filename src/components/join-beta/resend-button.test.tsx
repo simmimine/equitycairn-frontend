@@ -51,12 +51,16 @@ describe("ResendButton", () => {
     act(() => {
       vi.advanceTimersByTime(2000);
     });
-    expect(screen.getByRole("button", { name: "Re-send email" })).toBeEnabled();
+    expect(
+      screen.getByRole("button", { name: "Resend confirmation email" }),
+    ).toBeEnabled();
   });
 
   it("is enabled immediately when there is no cooldown", () => {
     render(<ResendButton token="tok" initialCooldownSeconds={0} />);
-    expect(screen.getByRole("button", { name: "Re-send email" })).toBeEnabled();
+    expect(
+      screen.getByRole("button", { name: "Resend confirmation email" }),
+    ).toBeEnabled();
   });
 
   it("calls the action once, shows pending, then restarts the countdown", async () => {
@@ -67,7 +71,9 @@ describe("ResendButton", () => {
       }),
     );
     render(<ResendButton token="tok" initialCooldownSeconds={0} />);
-    const button = screen.getByRole("button", { name: "Re-send email" });
+    const button = screen.getByRole("button", {
+      name: "Resend confirmation email",
+    });
     await click(button, 2);
     expect(resendVerification).toHaveBeenCalledTimes(1);
     expect(resendVerification).toHaveBeenCalledWith("tok");
@@ -101,7 +107,9 @@ describe("ResendButton", () => {
       retryAfterSeconds: 25,
     });
     render(<ResendButton token="tok" initialCooldownSeconds={0} />);
-    await click(screen.getByRole("button", { name: "Re-send email" }));
+    await click(
+      screen.getByRole("button", { name: "Resend confirmation email" }),
+    );
     expect(
       screen.getByRole("button", { name: /Re-send available in 0:25/ }),
     ).toBeDisabled();
@@ -112,10 +120,12 @@ describe("ResendButton", () => {
     async (error) => {
       resendVerification.mockResolvedValue({ ok: false, error });
       render(<ResendButton token="tok" initialCooldownSeconds={0} />);
-      await click(screen.getByRole("button", { name: "Re-send email" }));
+      await click(
+        screen.getByRole("button", { name: "Resend confirmation email" }),
+      );
       expect(screen.getByRole("alert")).toBeInTheDocument();
       expect(
-        screen.getByRole("button", { name: "Re-send email" }),
+        screen.getByRole("button", { name: "Resend confirmation email" }),
       ).toBeEnabled();
     },
   );

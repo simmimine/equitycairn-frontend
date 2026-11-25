@@ -5,6 +5,7 @@ import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { FieldError } from "@/components/ui/field";
 import { Spinner } from "@/components/ui/spinner";
+import { attempt } from "@/lib/attempt";
 
 export type CooldownResult =
   | { ok: true; retryAfterSeconds: number }
@@ -55,17 +56,15 @@ export function CooldownButton({
     setError(false);
     setSent(false);
     try {
-      const result = await onResend();
+      const result = await attempt(() => onResend());
       if (result.ok) {
         setSent(true);
         restart(result.retryAfterSeconds);
-      } else if (result.retryAfterSeconds) {
+      } else if ("retryAfterSeconds" in result && result.retryAfterSeconds) {
         restart(result.retryAfterSeconds);
       } else {
         setError(true);
       }
-    } catch {
-      setError(true);
     } finally {
       inFlight.current = false;
       setPending(false);
@@ -76,7 +75,7 @@ export function CooldownButton({
     <div className="flex flex-col gap-3">
       <Button
         type="button"
-        variant="outline"
+        size="xl"
         disabled={pending || counting}
         aria-busy={pending}
         onClick={onClick}
@@ -84,7 +83,7 @@ export function CooldownButton({
         {pending && <Spinner data-icon="inline-start" aria-hidden="true" />}
         {counting
           ? `Re-send available in ${formatSeconds(remaining)}`
-          : "Re-send email"}
+          : "Resend confirmation email"}
       </Button>
       {error && <FieldError>Something went wrong, please try again</FieldError>}
       <p aria-live="polite" className="text-sm text-muted-foreground">

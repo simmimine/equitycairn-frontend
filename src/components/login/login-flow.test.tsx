@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -60,7 +60,7 @@ describe("LoginFlow", () => {
     expect(
       await screen.findByText(/verify your beta sign-up first/i),
     ).toBeInTheDocument();
-    await user.click(screen.getByRole("button", { name: /re-send/i }));
+    await user.click(screen.getByRole("button", { name: /resend|re-send/i }));
     expect(resendBetaVerification).toHaveBeenCalledWith(EMAIL);
     expect(
       await screen.findByRole("button", { name: /re-send available in 1:00/i }),
@@ -132,5 +132,28 @@ describe("LoginFlow", () => {
     await user.type(screen.getByLabelText("Email"), EMAIL);
     await user.click(screen.getByRole("button", { name: /continue/i }));
     expect(await screen.findByText(/too many attempts/i)).toBeInTheDocument();
+  });
+});
+
+describe("LoginFlow when an action cannot be reached", () => {
+  it("shows an inline error instead of crashing", async () => {
+    const offline = vi.fn().mockRejectedValue(new TypeError("offline"));
+    const user = userEvent.setup();
+    const view = render(
+      <LoginFlow
+        actions={{
+          checkEmail: offline,
+          createAccount: offline,
+          resendBetaVerification: offline,
+          signIn: offline,
+        }}
+      />,
+    );
+    const form = within(view.container);
+    await user.type(form.getByLabelText("Email"), "a@example.com");
+    await user.click(form.getByRole("button", { name: /continue/i }));
+    expect(
+      await form.findByText("Something went wrong, please try again"),
+    ).toBeInTheDocument();
   });
 });

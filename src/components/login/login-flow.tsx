@@ -1,5 +1,6 @@
 "use client";
 
+import { cn } from "cn";
 import Link from "next/link";
 import { useState, useTransition } from "react";
 
@@ -9,14 +10,9 @@ import {
   resendBetaVerification,
   signIn,
 } from "@/app/actions/login";
+import { INPUT, TEXT_LINK } from "@/components/brand/styles";
+import { AuthCard, AuthNotice } from "@/components/join-beta/auth-card";
 import { Button, buttonVariants } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
 import {
   Field,
   FieldError,
@@ -25,10 +21,25 @@ import {
 } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { Spinner } from "@/components/ui/spinner";
+import { attempt } from "@/lib/attempt";
 import { parseEmail } from "@/lib/signup/email";
 
 import { CooldownButton } from "./cooldown-button";
 import { PASSWORD_MESSAGES, PasswordField } from "./password-fields";
+
+export type LoginActions = {
+  checkEmail: typeof checkEmail;
+  createAccount: typeof createAccount;
+  resendBetaVerification: typeof resendBetaVerification;
+  signIn: typeof signIn;
+};
+
+const ACTIONS: LoginActions = {
+  checkEmail,
+  createAccount,
+  resendBetaVerification,
+  signIn,
+};
 
 type Step =
   | { name: "email" }
@@ -44,33 +55,17 @@ const GENERIC_ERROR = "Something went wrong, please try again";
 const RATE_LIMITED =
   "Too many attempts. Please wait a few minutes and try again.";
 
-function Shell({
-  title,
-  description,
-  children,
+function BackButton({
+  onClick,
+  children = "Use a different email",
 }: {
-  title: string;
-  description?: string;
-  children: React.ReactNode;
+  onClick: () => void;
+  children?: React.ReactNode;
 }) {
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>
-          <h1>{title}</h1>
-        </CardTitle>
-        {description && <CardDescription>{description}</CardDescription>}
-      </CardHeader>
-      <CardContent className="flex flex-col gap-4">{children}</CardContent>
-    </Card>
-  );
-}
-
-function BackButton({ onClick }: { onClick: () => void }) {
-  return (
-    <Button type="button" variant="ghost" onClick={onClick}>
-      Use a different email
-    </Button>
+    <button type="button" onClick={onClick} className={TEXT_LINK}>
+      {children}
+    </button>
   );
 }
 
@@ -82,20 +77,26 @@ function SubmitButton({
   children: React.ReactNode;
 }) {
   return (
-    <Button type="submit" disabled={pending} aria-busy={pending}>
+    <Button type="submit" size="xl" disabled={pending} aria-busy={pending}>
       {pending && <Spinner data-icon="inline-start" aria-hidden="true" />}
       {children}
     </Button>
   );
 }
 
-function EmailCard({ onNext }: { onNext: (step: Step) => void }) {
+function EmailCard({
+  actions,
+  onNext,
+}: {
+  actions: LoginActions;
+  onNext: (step: Step) => void;
+}) {
   const [email, setEmail] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
 
   return (
-    <Shell title="Log in" description="Enter your email to continue.">
+    <AuthCard title="Log in" description="Enter your email to continue.">
       <form
         noValidate
         onSubmit={(event) => {
@@ -107,7 +108,7 @@ function EmailCard({ onNext }: { onNext: (step: Step) => void }) {
           }
           setError(null);
           startTransition(async () => {
-            const result = await checkEmail(email);
+            const result = await attempt(() => actions.checkEmail(email));
             if (result.ok) {
               const clean = email.trim().toLowerCase();
               onNext({
@@ -132,7 +133,9 @@ function EmailCard({ onNext }: { onNext: (step: Step) => void }) {
       >
         <FieldGroup>
           <Field data-invalid={error ? true : undefined}>
-            <FieldLabel htmlFor="login-email">Email</FieldLabel>
+            <FieldLabel htmlFor="login-email" className="text-xs font-semibold">
+              Email
+            </FieldLabel>
             <Input
               id="login-email"
               name="email"
@@ -140,6 +143,7 @@ function EmailCard({ onNext }: { onNext: (step: Step) => void }) {
               autoComplete="email"
               placeholder="you@example.com"
               required
+              className={INPUT}
               value={email}
               onChange={(event) => {
                 setEmail(event.target.value);
@@ -153,15 +157,25 @@ function EmailCard({ onNext }: { onNext: (step: Step) => void }) {
           <SubmitButton pending={pending}>Continue</SubmitButton>
         </FieldGroup>
       </form>
-    </Shell>
+      <div className="flex flex-col gap-2">
+        <p className="text-[11px] text-muted-foreground">
+          Only verified beta members can create an account.
+        </p>
+        <Link href="/#join" className={TEXT_LINK}>
+          New to the beta? Join the beta
+        </Link>
+      </div>
+    </AuthCard>
   );
 }
 
 function CreateCard({
+  actions,
   email,
   onBack,
   onNext,
 }: {
+  actions: LoginActions;
   email: string;
   onBack: () => void;
   onNext: (step: Step) => void;
@@ -172,14 +186,19 @@ function CreateCard({
   const [pending, startTransition] = useTransition();
 
   return (
-    <Shell title="Create your password" description={email}>
+    <AuthCard title="Create your password">
+      <AuthNotice data-testid="email-chip">
+        <span className="min-w-0 break-all">{email}</span>
+      </AuthNotice>
       <form
         onSubmit={(event) => {
           event.preventDefault();
           if (pending) return;
           setError(null);
           startTransition(async () => {
-            const result = await createAccount(email, password, confirm);
+            const result = await attempt(() =>
+              actions.createAccount(email, password, confirm),
+            );
             if (result.ok) {
               onNext({
                 name: "check_email",
@@ -212,7 +231,8 @@ function CreateCard({
             value={password}
             onChange={setPassword}
             autoComplete="new-password"
-            hint="At least 12 characters."
+            placeholder="Enter your password"
+            describedBy="create-hint"
           />
           <PasswordField
             id="create-confirm"
@@ -220,23 +240,46 @@ function CreateCard({
             value={confirm}
             onChange={setConfirm}
             autoComplete="new-password"
+            placeholder="Enter it again"
             error={error}
           />
+          <p
+            id="create-hint"
+            className="-mt-3 text-[11px] text-muted-foreground"
+          >
+            At least 12 characters.
+          </p>
           <SubmitButton pending={pending}>Create account</SubmitButton>
         </FieldGroup>
       </form>
-      <BackButton onClick={onBack} />
-    </Shell>
+      <BackButton onClick={onBack}>
+        <span aria-hidden="true">← </span>Back to email
+      </BackButton>
+    </AuthCard>
   );
 }
 
-function SignInCard({ email, onBack }: { email: string; onBack: () => void }) {
+function SignInCard({
+  actions,
+  email,
+  onBack,
+}: {
+  actions: LoginActions;
+  email: string;
+  onBack: () => void;
+}) {
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
 
   return (
-    <Shell title="Welcome back" description={email}>
+    <AuthCard title="Welcome back">
+      <AuthNotice data-testid="email-chip">
+        <span className="min-w-0 break-all">{email}</span>
+        <button type="button" onClick={onBack} className={TEXT_LINK}>
+          Change
+        </button>
+      </AuthNotice>
       <form
         onSubmit={(event) => {
           event.preventDefault();
@@ -244,7 +287,7 @@ function SignInCard({ email, onBack }: { email: string; onBack: () => void }) {
           setError(null);
           startTransition(async () => {
             // On success the action redirects and never returns.
-            const result = await signIn(email, password);
+            const result = await attempt(() => actions.signIn(email, password));
             if (result.error === "invalid_credentials") {
               setError("Email or password is incorrect");
             } else if (result.error === "unconfirmed") {
@@ -272,64 +315,100 @@ function SignInCard({ email, onBack }: { email: string; onBack: () => void }) {
         </FieldGroup>
       </form>
       <BackButton onClick={onBack} />
-    </Shell>
+    </AuthCard>
   );
 }
 
-export function LoginFlow() {
+export function LoginFlow({
+  actions = ACTIONS,
+}: {
+  /** Replaced by fakes on the e2e page; the real ones need Supabase. */
+  actions?: LoginActions;
+}) {
   const [step, setStep] = useState<Step>({ name: "email" });
   const back = () => setStep({ name: "email" });
 
+  // Each card is keyed so React never reuses one step's buttons for the next.
   switch (step.name) {
     case "email":
-      return <EmailCard onNext={setStep} />;
+      return <EmailCard key="email" actions={actions} onNext={setStep} />;
     case "not_listed":
       return (
-        <Shell
+        <AuthCard
+          key="not_listed"
           title="This email isn't on the beta list yet"
           description="Join the beta and we'll let you know when it's your turn."
         >
-          <Link href="/#join" className={buttonVariants()}>
+          <Link href="/#join" className={cn(buttonVariants({ size: "xl" }))}>
             Join the beta
           </Link>
           <BackButton onClick={back} />
-        </Shell>
+        </AuthCard>
       );
     case "unverified":
       return (
-        <Shell
+        <AuthCard
+          key="unverified"
           title="Verify your beta sign-up first"
           description="You're on the list, but we haven't confirmed this email yet. Open the link we sent you, or ask for a new one."
+          icon="mail"
         >
           <CooldownButton
             initialCooldownSeconds={step.cooldown ?? 0}
-            onResend={() => resendBetaVerification(step.email)}
+            onResend={() => actions.resendBetaVerification(step.email)}
           />
           <BackButton onClick={back} />
-        </Shell>
+        </AuthCard>
       );
     case "create":
-      return <CreateCard email={step.email} onBack={back} onNext={setStep} />;
+      return (
+        <CreateCard
+          key="create"
+          actions={actions}
+          email={step.email}
+          onBack={back}
+          onNext={setStep}
+        />
+      );
     case "signin":
-      return <SignInCard email={step.email} onBack={back} />;
+      return (
+        <SignInCard
+          key="signin"
+          actions={actions}
+          email={step.email}
+          onBack={back}
+        />
+      );
     case "check_email":
       return (
-        <Shell
+        <AuthCard
+          key="check_email"
           title="Check your email"
           description="We've sent a link to finish creating your account. You'll be asked for the password you just chose."
+          icon="mail"
         >
+          <AuthNotice>
+            <span className="min-w-0 wrap-anywhere">
+              Account confirmation link sent to {step.email}.
+            </span>
+          </AuthNotice>
           <CooldownButton
             initialCooldownSeconds={step.cooldown ?? 60}
             onResend={() =>
-              createAccount(
+              actions.createAccount(
                 step.email,
                 step.password ?? "",
                 step.password ?? "",
               )
             }
           />
-          <BackButton onClick={back} />
-        </Shell>
+          <p className="text-[11px] text-muted-foreground">
+            If you don’t see it, check your spam folder.
+          </p>
+          <div className="mt-auto pt-4">
+            <BackButton onClick={back}>Back to log in</BackButton>
+          </div>
+        </AuthCard>
       );
   }
 }
