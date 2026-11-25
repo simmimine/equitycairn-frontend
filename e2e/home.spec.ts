@@ -248,3 +248,26 @@ test.describe("beta sign-up outcomes", () => {
     await expect(button).toHaveAttribute("aria-busy", "true");
   });
 });
+
+test("feed row times and links sit on the headline's line", async ({
+  page,
+}) => {
+  test.skip(isMobile(page), "the phone board stacks the link under the story");
+  const rows = page.locator("#product li");
+  await expect(rows).toHaveCount(2);
+  for (const row of await rows.all()) {
+    // Text baselines, measured with a zero-height inline marker in each cell.
+    const baselines = await row.evaluate((li) =>
+      [...li.children].map((cell) => {
+        const marker = document.createElement("span");
+        marker.style.cssText = "display:inline-block;height:0";
+        cell.prepend(marker);
+        const y = marker.getBoundingClientRect().bottom;
+        marker.remove();
+        return y;
+      }),
+    );
+    expect(baselines).toHaveLength(3);
+    expect(Math.max(...baselines) - Math.min(...baselines)).toBeLessThan(1);
+  }
+});

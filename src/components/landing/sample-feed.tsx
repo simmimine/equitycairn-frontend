@@ -54,7 +54,7 @@ export function SampleFeed() {
             <li
               key={story.headline}
               className={cn(
-                "gap-4 py-3 md:grid md:grid-cols-[50px_1fr_auto] md:py-5",
+                "gap-4 py-3 md:grid md:grid-cols-[50px_1fr_auto] md:items-baseline md:py-5",
                 // The phone board shows a single story.
                 index > 0 && "hidden border-t",
               )}
@@ -65,7 +65,7 @@ export function SampleFeed() {
               <p className="text-xs font-semibold md:text-[13px]">
                 {story.headline}
               </p>
-              <p className="mt-5 text-[11px] font-medium text-link md:mt-6 md:pr-24">
+              <p className="mt-5 text-[11px] font-medium text-link md:mt-0 md:pr-24">
                 <span className="md:hidden">
                   3 related sample links · Original story ↗
                 </span>
