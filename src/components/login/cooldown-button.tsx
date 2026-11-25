@@ -76,7 +76,7 @@ export function CooldownButton({
     <div className="flex flex-col gap-3">
       <Button
         type="button"
-        variant="outline"
+        size="xl"
         disabled={pending || counting}
         aria-busy={pending}
         onClick={onClick}
@@ -84,7 +84,7 @@ export function CooldownButton({
         {pending && <Spinner data-icon="inline-start" aria-hidden="true" />}
         {counting
           ? `Re-send available in ${formatSeconds(remaining)}`
-          : "Re-send email"}
+          : "Resend confirmation email"}
       </Button>
       {error && <FieldError>Something went wrong, please try again</FieldError>}
       <p aria-live="polite" className="text-sm text-muted-foreground">

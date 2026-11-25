@@ -1,11 +1,7 @@
 "use client";
 
-import {
-  Field,
-  FieldDescription,
-  FieldError,
-  FieldLabel,
-} from "@/components/ui/field";
+import { Field, FieldError, FieldLabel } from "@/components/ui/field";
+import { INPUT } from "@/components/brand/styles";
 import { Input } from "@/components/ui/input";
 import type { PasswordError } from "@/lib/auth/types";
 
@@ -24,7 +20,8 @@ export function PasswordField({
   onChange,
   autoComplete,
   error,
-  hint,
+  placeholder,
+  describedBy,
 }: {
   id: string;
   label: string;
@@ -32,23 +29,28 @@ export function PasswordField({
   onChange: (value: string) => void;
   autoComplete: "new-password" | "current-password";
   error?: string | null;
-  hint?: string;
+  placeholder?: string;
+  /** Id of a hint rendered elsewhere in the form. */
+  describedBy?: string;
 }) {
   return (
     <Field data-invalid={error ? true : undefined}>
-      <FieldLabel htmlFor={id}>{label}</FieldLabel>
+      <FieldLabel htmlFor={id} className="text-xs font-semibold">
+        {label}
+      </FieldLabel>
       <Input
         id={id}
         type="password"
         autoComplete={autoComplete}
         required
+        placeholder={placeholder}
+        className={INPUT}
         value={value}
         onChange={(event) => onChange(event.target.value)}
         aria-invalid={error ? true : undefined}
-        aria-describedby={error ? `${id}-error` : undefined}
+        aria-describedby={error ? `${id}-error` : describedBy}
       />
       {error && <FieldError id={`${id}-error`}>{error}</FieldError>}
-      {hint && !error && <FieldDescription>{hint}</FieldDescription>}
     </Field>
   );
 }

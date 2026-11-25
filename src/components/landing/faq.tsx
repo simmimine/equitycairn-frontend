@@ -1,9 +1,13 @@
+import { cn } from "cn";
+
 import {
   Accordion,
   AccordionContent,
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
+import { SURFACE } from "@/components/brand/styles";
+import { Section } from "@/components/landing/section";
 
 const QUESTIONS = [
   {
@@ -35,25 +39,26 @@ const QUESTIONS = [
 
 export function Faq() {
   return (
-    <section aria-labelledby="faq" className="border-t bg-muted/40">
-      <div className="mx-auto flex max-w-3xl flex-col gap-8 px-4 py-16 sm:px-6 md:py-24">
-        <h2
-          id="faq"
-          className="text-2xl font-semibold tracking-tight md:text-3xl"
-        >
-          Questions
-        </h2>
+    <Section id="faq" eyebrow="Good to know" title="Questions">
+      <div
+        data-testid="faq-card"
+        className={cn(SURFACE, "overflow-hidden px-5 py-2 md:px-6")}
+      >
         <Accordion>
           {QUESTIONS.map(({ question, answer }) => (
             <AccordionItem key={question} value={question}>
-              <AccordionTrigger>{question}</AccordionTrigger>
+              <AccordionTrigger className="py-4 font-semibold">
+                {question}
+              </AccordionTrigger>
               <AccordionContent>
-                <p className="text-muted-foreground">{answer}</p>
+                <p className="text-xs leading-relaxed text-muted-foreground">
+                  {answer}
+                </p>
               </AccordionContent>
             </AccordionItem>
           ))}
         </Accordion>
       </div>
-    </section>
+    </Section>
   );
 }

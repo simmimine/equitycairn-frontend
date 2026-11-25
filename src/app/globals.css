@@ -7,7 +7,8 @@
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
+  --font-sans: var(--font-inter);
+  --color-link: var(--link);
   --font-mono: var(--font-geist-mono);
   --font-heading: var(--font-sans);
   --color-sidebar-ring: var(--sidebar-ring);
@@ -58,6 +59,7 @@
   --popover-foreground: #071f22;
   --primary: #366fbf;
   --primary-foreground: #f4fcfd;
+  --link: #366fbf;
   --secondary: #d1f2f5;
   --secondary-foreground: #071f22;
   --muted: #d1f2f5;
@@ -93,6 +95,8 @@
   --popover-foreground: #f4fcfd;
   --primary: #366fbf;
   --primary-foreground: #f4fcfd;
+  /* Brand blue is too faint for small text on the dark card. */
+  --link: #6b9ee3;
   --secondary: #123a40;
   --secondary-foreground: #d1f2f5;
   --muted: #123a40;
@@ -100,8 +104,8 @@
   --accent: #123a40;
   --accent-foreground: #d1f2f5;
   --destructive: oklch(0.704 0.191 22.216);
-  --border: rgb(209 242 245 / 14%);
-  --input: rgb(209 242 245 / 20%);
+  --border: #123a40;
+  --input: #123a40;
   --ring: #5a8fd6;
   --chart-1: #5a8fd6;
   --chart-2: #8fb4e6;

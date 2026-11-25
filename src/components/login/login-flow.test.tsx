@@ -60,7 +60,7 @@ describe("LoginFlow", () => {
     expect(
       await screen.findByText(/verify your beta sign-up first/i),
     ).toBeInTheDocument();
-    await user.click(screen.getByRole("button", { name: /re-send/i }));
+    await user.click(screen.getByRole("button", { name: /resend|re-send/i }));
     expect(resendBetaVerification).toHaveBeenCalledWith(EMAIL);
     expect(
       await screen.findByRole("button", { name: /re-send available in 1:00/i }),

@@ -17,7 +17,9 @@ describe("CooldownButton", () => {
       vi.advanceTimersByTime(3100);
     });
     expect(screen.getByRole("button")).toBeEnabled();
-    expect(screen.getByRole("button")).toHaveTextContent("Re-send email");
+    expect(screen.getByRole("button")).toHaveTextContent(
+      "Resend confirmation email",
+    );
   });
 
   it("restarts the countdown from the server's retryAfterSeconds", async () => {

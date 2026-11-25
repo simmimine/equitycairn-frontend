@@ -1,50 +1,9 @@
-import Link from "next/link";
 import { connection } from "next/server";
 
-import { JoinBetaShell } from "@/components/join-beta/join-beta-shell";
-import { ResendButton } from "@/components/join-beta/resend-button";
-import { buttonVariants } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { LinkScreen } from "@/components/join-beta/link-screen";
+import { BetaCheckEmail } from "@/components/join-beta/views";
 import { parseTokenParam } from "@/lib/signup/search-token";
 import { getSignupStatus } from "@/lib/signup/store";
-
-function HomeLink() {
-  return (
-    <Link href="/" className={buttonVariants()}>
-      Back to home
-    </Link>
-  );
-}
-
-function Message({
-  title,
-  description,
-  children,
-}: {
-  title: string;
-  description: string;
-  children?: React.ReactNode;
-}) {
-  return (
-    <JoinBetaShell>
-      <Card>
-        <CardHeader>
-          <CardTitle>
-            <h1>{title}</h1>
-          </CardTitle>
-          <CardDescription>{description}</CardDescription>
-        </CardHeader>
-        {children && <CardContent>{children}</CardContent>}
-      </Card>
-    </JoinBetaShell>
-  );
-}
 
 export async function JoinBetaContent({
   searchParams,
@@ -54,12 +13,12 @@ export async function JoinBetaContent({
   const token = parseTokenParam((await searchParams).token);
 
   const invalid = (
-    <Message
+    <LinkScreen
       title="This link isn't valid"
       description="Head back to the home page to join the beta."
-    >
-      <HomeLink />
-    </Message>
+      href="/"
+      action="Back to home"
+    />
   );
   if (!token) return invalid;
 
@@ -72,25 +31,20 @@ export async function JoinBetaContent({
   } catch {
     console.error("join-beta page: status lookup failed");
     return (
-      <Message
+      <LinkScreen
         title="Something went wrong"
         description="Please try again in a moment."
-      >
-        <HomeLink />
-      </Message>
+        href="/"
+        action="Back to home"
+      />
     );
   }
   if (!status) return invalid;
 
   return (
-    <Message
-      title="Check your email"
-      description="We've sent you a link to confirm your address. It can take a minute to arrive, and may land in spam."
-    >
-      <ResendButton
-        token={token}
-        initialCooldownSeconds={status.cooldownRemainingSeconds}
-      />
-    </Message>
+    <BetaCheckEmail
+      token={token}
+      cooldownSeconds={status.cooldownRemainingSeconds}
+    />
   );
 }

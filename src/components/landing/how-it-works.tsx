@@ -1,12 +1,9 @@
+import { cn } from "cn";
 import { ExternalLinkIcon, ListPlusIcon, RowsIcon } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 
-import {
-  Card,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { SURFACE } from "@/components/brand/styles";
+import { Section } from "@/components/landing/section";
 
 type Step = { icon: LucideIcon; title: string; description: string };
 
@@ -33,31 +30,20 @@ const STEPS: Step[] = [
 
 export function HowItWorks() {
   return (
-    <section aria-labelledby="how-it-works" className="border-t bg-muted/40">
-      <div className="mx-auto flex max-w-6xl flex-col gap-8 px-4 py-16 sm:px-6 md:py-24">
-        <h2
-          id="how-it-works"
-          className="text-2xl font-semibold tracking-tight md:text-3xl"
-        >
-          How it works
-        </h2>
-        <ol className="grid gap-4 md:grid-cols-3">
-          {STEPS.map(({ icon: Icon, title, description }) => (
-            <li key={title} className="flex">
-              <Card className="flex-1">
-                <CardHeader>
-                  <Icon
-                    aria-hidden="true"
-                    className="mb-2 size-5 text-primary"
-                  />
-                  <CardTitle>{title}</CardTitle>
-                  <CardDescription>{description}</CardDescription>
-                </CardHeader>
-              </Card>
-            </li>
-          ))}
-        </ol>
-      </div>
-    </section>
+    <Section id="how-it-works" eyebrow="Three steps" title="How it works">
+      <ol className="grid gap-4 md:grid-cols-3">
+        {STEPS.map(({ icon: Icon, title, description }) => (
+          <li key={title} data-testid="how-card" className={cn(SURFACE, "p-5")}>
+            <span className="flex size-10 items-center justify-center rounded-full bg-secondary">
+              <Icon aria-hidden="true" className="size-5 text-link" />
+            </span>
+            <h3 className="mt-4 text-sm font-bold">{title}</h3>
+            <p className="mt-2 text-xs leading-relaxed text-muted-foreground">
+              {description}
+            </p>
+          </li>
+        ))}
+      </ol>
+    </Section>
   );
 }

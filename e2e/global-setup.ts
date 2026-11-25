@@ -9,6 +9,7 @@ const ROUTES = [
   "/onboarding",
   "/feed",
   "/e2e-onboarding",
+  "/e2e-auth",
 ];
 
 /** Warms every route the specs visit so dev-server compilation can't cause timeouts. */

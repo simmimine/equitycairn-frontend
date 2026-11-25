@@ -62,7 +62,7 @@ describe("SignupForm", () => {
     const button = await screen.findByRole("button");
     await waitFor(() => expect(button).toBeDisabled());
     expect(button).toHaveAttribute("aria-busy", "true");
-    expect(button).toHaveAccessibleName("Join the beta");
+    expect(button).toHaveAccessibleName("Request beta access");
     expect(screen.getByLabelText(/email/i)).toHaveAttribute("readonly");
     const spinner = button.querySelector('[data-slot="spinner"]');
     expect(spinner).not.toBeNull();

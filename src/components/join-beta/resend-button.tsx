@@ -6,6 +6,7 @@ import { resendVerification } from "@/app/actions/resend-verification";
 import { Button } from "@/components/ui/button";
 import { FieldError } from "@/components/ui/field";
 import { Spinner } from "@/components/ui/spinner";
+import type { ResendResult } from "@/lib/signup/types";
 
 const SUCCESS_MESSAGE = "If your address is on the list, we've sent a new link";
 const ERROR_MESSAGE = "Something went wrong, please try again";
@@ -19,9 +20,11 @@ function formatSeconds(total: number): string {
 export function ResendButton({
   token,
   initialCooldownSeconds,
+  resend = resendVerification,
 }: {
   token: string;
   initialCooldownSeconds: number;
+  resend?: (token: string) => Promise<ResendResult>;
 }) {
   const [start] = useState(() => Date.now());
   const [deadline, setDeadline] = useState(
@@ -55,7 +58,7 @@ export function ResendButton({
     setError(false);
     setSent(false);
     try {
-      const result = await resendVerification(token);
+      const result = await resend(token);
       if (result.ok) {
         setSent(true);
         restart(result.retryAfterSeconds);
@@ -76,7 +79,7 @@ export function ResendButton({
     <div className="flex flex-col gap-3">
       <Button
         type="button"
-        variant="outline"
+        size="xl"
         disabled={pending || counting}
         aria-busy={pending}
         onClick={onClick}
@@ -84,7 +87,7 @@ export function ResendButton({
         {pending && <Spinner data-icon="inline-start" aria-hidden="true" />}
         {counting
           ? `Re-send available in ${formatSeconds(remaining)}`
-          : "Re-send email"}
+          : "Resend confirmation email"}
       </Button>
       {error && <FieldError>{ERROR_MESSAGE}</FieldError>}
       <p aria-live="polite" className="text-sm text-muted-foreground">

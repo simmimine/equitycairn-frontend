@@ -15,6 +15,7 @@ import {
   FieldGroup,
   FieldLabel,
 } from "@/components/ui/field";
+import { INPUT } from "@/components/brand/styles";
 import { Input } from "@/components/ui/input";
 import { Spinner } from "@/components/ui/spinner";
 import { cn } from "@/lib/utils";
@@ -35,9 +36,11 @@ function message(result: ConfirmAccountResult): string {
 export function ConfirmForm({
   tokenHash,
   email,
+  confirm = confirmAccount,
 }: {
   tokenHash: string;
   email: string;
+  confirm?: typeof confirmAccount;
 }) {
   const [password, setPassword] = useState("");
   const [result, setResult] = useState<ConfirmAccountResult | null>(null);
@@ -49,7 +52,7 @@ export function ConfirmForm({
         event.preventDefault();
         if (pending) return;
         startTransition(async () => {
-          setResult(await confirmAccount(tokenHash, email, password));
+          setResult(await confirm(tokenHash, email, password));
         });
       }}
     >
@@ -61,6 +64,8 @@ export function ConfirmForm({
             type="password"
             autoComplete="current-password"
             required
+            placeholder="Enter your password"
+            className={INPUT}
             value={password}
             onChange={(event) => {
               setPassword(event.target.value);
@@ -72,18 +77,18 @@ export function ConfirmForm({
           {result && (
             <FieldError id="confirm-error">{message(result)}</FieldError>
           )}
-          <FieldDescription>
+          <FieldDescription className="text-[11px]">
             Enter the password you chose when you signed up.
           </FieldDescription>
         </Field>
-        <Button type="submit" disabled={pending} aria-busy={pending}>
+        <Button type="submit" size="xl" disabled={pending} aria-busy={pending}>
           {pending && <Spinner data-icon="inline-start" aria-hidden="true" />}
           Finish creating account
         </Button>
         {result?.error === "expired" && (
           <Link
             href="/login"
-            className={cn(buttonVariants({ variant: "outline" }))}
+            className={cn(buttonVariants({ variant: "outline", size: "xl" }))}
           >
             Start again
           </Link>

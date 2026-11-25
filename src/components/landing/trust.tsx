@@ -1,4 +1,8 @@
+import { cn } from "cn";
 import { CheckIcon } from "lucide-react";
+
+import { SURFACE } from "@/components/brand/styles";
+import { Section } from "@/components/landing/section";
 
 const POINTS = [
   {
@@ -22,36 +26,29 @@ const POINTS = [
 
 export function Trust() {
   return (
-    <section aria-labelledby="trust" className="border-t">
-      <div className="mx-auto flex max-w-6xl flex-col gap-8 px-4 py-16 sm:px-6 md:py-24">
-        <div className="flex flex-col gap-2">
-          <h2
-            id="trust"
-            className="text-2xl font-semibold tracking-tight md:text-3xl"
+    <Section
+      id="trust"
+      eyebrow="Sources in view"
+      title="News you can trace"
+      description="Built to help you keep up, calmly and with the sources in view."
+    >
+      <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        {POINTS.map((point) => (
+          <li
+            key={point.title}
+            data-testid="trust-card"
+            className={cn(SURFACE, "p-5")}
           >
-            News you can trace
-          </h2>
-          <p className="text-muted-foreground">
-            Built to help you keep up, calmly and with the sources in view.
-          </p>
-        </div>
-        <ul className="grid gap-6 sm:grid-cols-2">
-          {POINTS.map((point) => (
-            <li key={point.title} className="flex gap-3">
-              <CheckIcon
-                aria-hidden="true"
-                className="mt-0.5 size-5 shrink-0 text-primary"
-              />
-              <div className="flex flex-col gap-1">
-                <h3 className="font-medium">{point.title}</h3>
-                <p className="text-sm text-muted-foreground">
-                  {point.description}
-                </p>
-              </div>
-            </li>
-          ))}
-        </ul>
-      </div>
-    </section>
+            <span className="flex size-10 items-center justify-center rounded-full bg-secondary">
+              <CheckIcon aria-hidden="true" className="size-5 text-link" />
+            </span>
+            <h3 className="mt-4 text-sm font-bold">{point.title}</h3>
+            <p className="mt-2 text-xs leading-relaxed text-muted-foreground">
+              {point.description}
+            </p>
+          </li>
+        ))}
+      </ul>
+    </Section>
   );
 }
