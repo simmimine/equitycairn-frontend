@@ -7,10 +7,18 @@ describe("TickerChip", () => {
   it("shows the ticker on a 52x24 chip", () => {
     render(<TickerChip ticker="BRK.B" />);
     expect(screen.getByText("BRK.B")).toHaveClass(
-      "h-6",
+      "min-h-6",
       "min-w-[52px]",
       "rounded-[7px]",
       "bg-secondary",
+    );
+  });
+
+  it("wraps a ticker too long for its container instead of overflowing", () => {
+    render(<TickerChip ticker="ABCDEFGHIJKLMNOPQRSTUVWXYZ" />);
+    expect(screen.getByText("ABCDEFGHIJKLMNOPQRSTUVWXYZ")).toHaveClass(
+      "max-w-full",
+      "break-all",
     );
   });
 });

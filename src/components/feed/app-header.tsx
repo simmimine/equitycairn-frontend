@@ -66,7 +66,11 @@ export function AppHeader({
   }, [openSearch]);
 
   return (
-    <header className="sticky top-0 z-20 border-b bg-card">
+    <header
+      // Phones only: globals.css clears this taller header when scrolling to focus.
+      data-search-open={shown || undefined}
+      className="sticky top-0 z-20 border-b bg-card"
+    >
       <div className="flex flex-wrap items-center gap-x-3 px-5 md:grid md:grid-cols-[1fr_minmax(0,510px)_1fr] md:gap-x-6 md:px-8">
         <Link
           href="/feed"

@@ -24,7 +24,7 @@ export function StoryCard({ story }: { story: Story }) {
         "flex min-w-0 flex-col gap-2.5 rounded-[13px] p-3.5 md:rounded-[14px] md:p-[18px]",
       )}
     >
-      <div className="flex items-center gap-2 text-[11px] font-bold">
+      <div className="flex flex-wrap items-center gap-2 text-[11px] font-bold">
         <TickerChip ticker={story.ticker} />
         <span className="tracking-wide text-muted-foreground">SAMPLE</span>
         {story.isNew && (

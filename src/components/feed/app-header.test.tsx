@@ -67,6 +67,17 @@ describe("AppHeader", () => {
     expect(input()).toHaveFocus();
   });
 
+  it("marks the header while the phone search row is open", () => {
+    // globals.css widens the page's scroll padding to the taller header.
+    render(<Harness />);
+    const header = screen.getByRole("banner");
+    expect(header).not.toHaveAttribute("data-search-open");
+    fireEvent.click(toggle());
+    expect(header).toHaveAttribute("data-search-open");
+    fireEvent.click(toggle());
+    expect(header).not.toHaveAttribute("data-search-open");
+  });
+
   it("clears the query when toggled closed", () => {
     render(<Harness />);
     fireEvent.click(toggle());

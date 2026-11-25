@@ -199,6 +199,13 @@
   scroll-padding-bottom: calc(66px + env(safe-area-inset-bottom));
 }
 
+/* The open search row adds 54px to the phone header (see AppHeader). */
+@media (width < 768px) {
+  .feed-scroll-padding:has(header[data-search-open]) {
+    scroll-padding-top: 118px;
+  }
+}
+
 @media (min-width: 768px) {
   .feed-scroll-padding {
     scroll-padding-top: 76px;
