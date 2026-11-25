@@ -1,8 +1,11 @@
+import { cn } from "cn";
+
+import { CONTAINER } from "@/components/brand/styles";
 import { BetaCard } from "@/components/landing/beta-card";
 
 export function FinalCta() {
   return (
-    <div className="mx-auto w-full max-w-[1440px] px-5 py-6 md:px-8 lg:px-16">
+    <div className={cn(CONTAINER, "py-6")}>
       <BetaCard
         inputId="cta-email"
         data-testid="cta-card"

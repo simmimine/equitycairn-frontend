@@ -1,6 +1,6 @@
 import { cn } from "cn";
 
-import { SURFACE } from "@/components/brand/styles";
+import { CONTAINER, SURFACE } from "@/components/brand/styles";
 
 // Illustrative stories only: no real publishers, and every headline says "Example".
 const STORIES = [
@@ -21,7 +21,7 @@ export function SampleFeed() {
     <section
       id="product"
       aria-labelledby="product-title"
-      className="mx-auto w-full max-w-[1440px] scroll-mt-20 px-5 pb-12 md:px-8 lg:px-16"
+      className={cn(CONTAINER, "scroll-mt-20 pb-12")}
     >
       <h2 id="product-title" className="text-[17px] font-bold md:text-[22px]">
         <span className="md:hidden">A glimpse of the feed</span>

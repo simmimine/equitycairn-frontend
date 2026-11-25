@@ -1,6 +1,6 @@
 import { cn } from "cn";
 
-import { EYEBROW } from "@/components/brand/styles";
+import { CONTAINER, EYEBROW } from "@/components/brand/styles";
 
 /** A below-the-fold section with the hero's eyebrow, bold heading and spacing. */
 export function Section({
@@ -22,10 +22,7 @@ export function Section({
     <section
       id={id}
       aria-labelledby={`${id}-title`}
-      className={cn(
-        "mx-auto w-full max-w-[1440px] scroll-mt-20 px-5 py-6 md:px-8 lg:px-16",
-        className,
-      )}
+      className={cn(CONTAINER, "scroll-mt-20 py-6", className)}
     >
       <p className={EYEBROW}>{eyebrow}</p>
       <h2

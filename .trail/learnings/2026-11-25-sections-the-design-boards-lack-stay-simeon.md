@@ -3,7 +3,7 @@ title: "Sections the design boards lack stay below the designed home page, style
 author: Simeon
 date: 2026-11-25
 branch: feature/design-refresh
-cost: { minutes: 12, tokens: 180846 }
+cost: { minutes: 14, tokens: 213276 }
 id: l-92a27578
 scope: repo
 status: active
@@ -25,6 +25,7 @@ touches:
 The owner chose "board first, then the extras": How it works, FAQ, trust points and the closing sign-up stay even though the Penpot home board has none, and they must look and feel like the hero. The sign-up "check your email" board shows an address, but we do not: the token in that URL must not reveal one. Small board text is floored at 11px, and faint greys and dark-mode link blue were swapped for higher contrast.
 Write test setup hooks with braces so they return nothing.
 Sign-up and login forms wrap server action calls in one shared helper. It lets redirects through, logs only the error name (messages can carry what the user typed), and reloads the page when the server no longer recognises the action.
+The designs exist only at 390 and 1440 wide. Below the tablet breakpoint the phone layout is a centred column with a maximum width. From tablet up the hero is two columns like the desktop board, and the three feature tiles sit under both columns until the screen is wide enough to hold them in the left one.
 
 ## Watch out
 A link to an in-page anchor that also focuses a field loses the focus: the browser's own jump runs after the click handler. jsdom unit tests passed while real browsers did not, so focus again on the next tick.
@@ -34,6 +35,9 @@ In the code: src/components/landing/join-beta-link.tsx, src/app/e2e-auth/ (E2E_F
 A one-line arrow hook that resets a mock returns the mock itself. Vitest treats a returned function as cleanup and calls it, so a mock set to reject fails the test after it has finished.
 
 In the code: `beforeEach` in src/components/login/confirm-form.test.tsx.
+Tests at just the two design widths passed while most widths in between looked broken. Layout changes need checking across widths.
+
+In the code: `CONTAINER` in src/components/brand/styles.ts, src/components/landing/hero.tsx, e2e/breakpoints.spec.ts.
 
 ## Tried and ruled out
 The test for an unreachable server action kept failing with the mock's own error, which looked like the component failing to catch it. The component was fine.

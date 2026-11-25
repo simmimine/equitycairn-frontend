@@ -1,6 +1,10 @@
+import { cn } from "cn";
+
+import { CONTAINER } from "@/components/brand/styles";
+
 export function SiteFooter() {
   return (
-    <footer className="mx-auto w-full max-w-[1440px] px-5 py-8 text-[11px] text-muted-foreground md:px-8 lg:px-16">
+    <footer className={cn(CONTAINER, "py-8 text-[11px] text-muted-foreground")}>
       <p>
         EquityCairn organizes company news and links to publishers; it doesn’t
         provide investment advice.
