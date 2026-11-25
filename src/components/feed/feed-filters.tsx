@@ -13,8 +13,9 @@ const TIME_OPTIONS: { value: TimeRange; label: string }[] = [
 const FOCUS =
   "outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50";
 
-// 16px below `md`, or iOS zooms in on focus.
-const SELECT_TEXT = "text-base font-medium md:text-xs";
+// 16px for touch at any width (a landscape phone too), or iOS zooms in on
+// focus; a mouse or trackpad gets the boards' 12px.
+const SELECT_TEXT = "text-base font-medium pointer-fine:text-xs";
 
 /**
  * A native select with its chevron right after the chosen text. A native select
@@ -30,7 +31,7 @@ function FilterSelect({
   value: string;
 }) {
   return (
-    <div className="relative h-8 max-w-full min-w-[120px]">
+    <div className="relative h-8 max-w-full min-w-[7.5rem]">
       <select
         value={value}
         className={cn(
@@ -70,7 +71,7 @@ function TickerPill({
       type="button"
       aria-pressed={pressed}
       className={cn(
-        "h-[29px] shrink-0 rounded-full border px-3.5 text-[11px] font-bold md:h-8 md:text-xs",
+        "h-[1.8125rem] shrink-0 rounded-full border px-3.5 text-[0.6875rem] font-bold md:h-8 md:text-xs",
         pressed
           ? "border-primary bg-primary text-primary-foreground"
           : "border-input bg-card text-muted-foreground hover:bg-secondary",

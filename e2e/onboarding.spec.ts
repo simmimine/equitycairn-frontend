@@ -1,5 +1,7 @@
 import { expect, test, type Page } from "@playwright/test";
 
+import { expectTestPage } from "./helpers";
+
 // Drives the real OnboardingFlow against in-memory fake actions (see
 // src/app/e2e-onboarding). Runs in the desktop and mobile projects.
 
@@ -12,15 +14,14 @@ declare global {
 }
 
 async function open(page: Page, query = "") {
-  const response = await page.goto(`/e2e-onboarding${query}`);
-  if (response?.status() === 404) {
-    throw new Error(
-      "/e2e-onboarding is 404: the server was started without E2E_FAKE_ONBOARDING=1. " +
-        "Stop any running dev server so Playwright can start its own, or start yours with that variable.",
-    );
-  }
+  await page.goto(`/e2e-onboarding${query}`);
+  await expectTestPage(
+    page,
+    page.locator("body[data-hydrated]"),
+    "/e2e-onboarding",
+    "E2E_FAKE_ONBOARDING",
+  );
   await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
-  await expect(page.locator("body[data-hydrated]")).toBeAttached();
 }
 
 async function calls(page: Page): Promise<Call[]> {

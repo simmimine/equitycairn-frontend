@@ -193,22 +193,22 @@
 }
 
 /* Feed page (set by FeedApp while on screen): a focused element scrolled into
-   view stays clear of the sticky header and, on phones, the fixed tab bar. */
+   view stays clear of the sticky header and, on phones, the fixed tab bar.
+   AppHeader and TabBar measure their heights into these variables, so a
+   larger default font, a wrapped header or the phone search row count too.
+   Until then, the heights at the usual font: in rem, as is the breakpoint
+   (Tailwind's `md`), so they follow the reader's font size. */
 .feed-scroll-padding {
-  scroll-padding-top: 64px;
-  scroll-padding-bottom: calc(66px + env(safe-area-inset-bottom));
+  scroll-padding-top: var(--feed-header-height, calc(3.9375rem + 1px));
+  scroll-padding-bottom: var(
+    --feed-tab-bar-height,
+    calc(4.125rem + env(safe-area-inset-bottom))
+  );
 }
 
-/* The open search row adds 54px to the phone header (see AppHeader). */
-@media (width < 768px) {
-  .feed-scroll-padding:has(header[data-search-open]) {
-    scroll-padding-top: 118px;
-  }
-}
-
-@media (min-width: 768px) {
+@media (width >= 48rem) {
   .feed-scroll-padding {
-    scroll-padding-top: 76px;
-    scroll-padding-bottom: 0;
+    scroll-padding-top: var(--feed-header-height, calc(4.6875rem + 1px));
+    scroll-padding-bottom: var(--feed-tab-bar-height, 0px);
   }
 }

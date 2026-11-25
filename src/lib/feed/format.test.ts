@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it } from "vitest";
 
-import { companyName, coverageLabel, formatPublished } from "./format";
+import { companyName, coverageLabel, formatPublished, webLink } from "./format";
 import type { Story } from "./types";
 
 const story: Story = {
@@ -70,5 +70,30 @@ describe("companyName", () => {
 
   it.each(["ZZZZ", "BRK.B"])("returns null for %s", (ticker) => {
     expect(companyName(ticker)).toBeNull();
+  });
+});
+
+describe("webLink", () => {
+  it.each([
+    "https://example.com/a",
+    "http://example.com/a?b=c#d",
+    "HTTPS://EXAMPLE.COM/A",
+  ])("keeps the web address %s", (url) => {
+    expect(webLink(url)).toBe(url);
+  });
+
+  it.each([
+    "javascript:alert(1)",
+    " javascript:alert(1)",
+    "JaVaScRiPt:alert(1)",
+    "data:text/html,<script>alert(1)</script>",
+    "vbscript:msgbox(1)",
+    "mailto:a@example.com",
+    "//example.com/a",
+    "/relative",
+    "not a url",
+    "",
+  ])("refuses %s", (url) => {
+    expect(webLink(url)).toBeNull();
   });
 });

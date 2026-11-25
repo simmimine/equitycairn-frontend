@@ -4,6 +4,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { getFeed } from "@/lib/feed/get-feed";
 import type { Feed } from "@/lib/feed/types";
+import { stubMatchMedia, stubResizeObserver } from "@/test-utils/dom-stubs";
 
 import { FeedApp } from "./feed-app";
 
@@ -30,6 +31,12 @@ const pill = (name: string) =>
     { name },
   );
 const search = () => screen.getByRole("searchbox", { name: SEARCH });
+
+// jsdom has neither; the header, sidebar and tab bar use both.
+beforeEach(() => {
+  stubMatchMedia();
+  stubResizeObserver();
+});
 
 describe("FeedApp", () => {
   it("lays out the header, sidebar, main, context panel and tab bar", () => {

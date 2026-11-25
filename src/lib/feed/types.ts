@@ -9,6 +9,10 @@ export type Story = {
   /** ISO 8601, UTC. */
   publishedAt: string;
   linkCount: number;
+  /**
+   * Absolute http(s) URL of the original story. Anything else (`javascript:`,
+   * `data:`, relative) is not linked; see `webLink`.
+   */
   originalUrl: string;
   isNew: boolean;
 };

@@ -1,6 +1,13 @@
 import { expect, test, type Page } from "@playwright/test";
 
-import { COLOR, calls, expectNoSidewaysScroll, isMobile } from "./helpers";
+import {
+  COLOR,
+  calls,
+  expectNoSidewaysScroll,
+  expectTestPage,
+  isMobile,
+  setDefaultFontSize,
+} from "./helpers";
 
 // Drives the real FeedApp on mocked stories with a fake sign out (see
 // src/app/e2e-feed). Runs in the desktop and mobile projects.
@@ -24,14 +31,13 @@ function watchConsole(page: Page) {
 }
 
 async function open(page: Page, query = "") {
-  const response = await page.goto(`/e2e-feed${query}`);
-  if (response?.status() === 404) {
-    throw new Error(
-      "/e2e-feed is 404: the server was started without E2E_FAKE_FEED=1. " +
-        "Stop any running dev server so Playwright can start its own, or start yours with that variable.",
-    );
-  }
-  await expect(page.locator("body[data-hydrated=true]")).toBeAttached();
+  await page.goto(`/e2e-feed${query}`);
+  await expectTestPage(
+    page,
+    page.locator("body[data-hydrated=true]"),
+    "/e2e-feed",
+    "E2E_FAKE_FEED",
+  );
   // A late font swap would move things after a test has measured them.
   await page.evaluate(() => document.fonts.ready);
 }
@@ -124,6 +130,10 @@ test.describe("feed page", () => {
     });
     await expect(panel).toBeVisible({ visible: !mobile });
     if (!mobile) {
+      // Not ⌘ on this platform; hydrating it raised no warning (afterEach).
+      await expect(page.getByRole("banner").locator("kbd")).toHaveText(
+        "Ctrl K",
+      );
       await expect(page.getByText("Newest first")).toBeVisible();
       await expect(page.getByText("Example items")).toBeVisible();
       await expect(
@@ -298,6 +308,65 @@ test.describe("feed page", () => {
       await expect(notice(page)).toContainText(`${feature} is coming soon.`);
       await notice(page).getByRole("button", { name: "Dismiss" }).click();
       await expect(notice(page)).toHaveCount(0);
+    }
+  });
+
+  /** A control that shows a notice, focused and pressed from the keyboard. */
+  async function openNotice(page: Page) {
+    const control = isMobile(page)
+      ? page
+          .getByRole("navigation", { name: "Tabs" })
+          .getByRole("button", { name: "Profile" })
+      : page.getByRole("button", { name: "Help" });
+    await control.focus();
+    await page.keyboard.press("Enter");
+    await expect(notice(page)).toContainText("is coming soon.");
+    return control;
+  }
+
+  test("Dismiss and Escape hand focus back to the control", async ({
+    page,
+  }) => {
+    const control = await openNotice(page);
+    await notice(page).getByRole("button", { name: "Dismiss" }).focus();
+    await page.keyboard.press("Enter");
+    await expect(notice(page)).toHaveCount(0);
+    await expect(control).toBeFocused();
+
+    await page.keyboard.press("Enter");
+    await notice(page).getByRole("button", { name: "Dismiss" }).focus();
+    await page.keyboard.press("Escape");
+    await expect(notice(page)).toHaveCount(0);
+    await expect(control).toBeFocused();
+  });
+
+  test("Escape closes a notice before it clears the search", async ({
+    page,
+  }) => {
+    await openNotice(page);
+    await search(page, "microsoft");
+    await page.keyboard.press("Escape");
+    await expect(notice(page)).toHaveCount(0);
+    await expect(searchBox(page)).toHaveValue("microsoft");
+    await expect(searchBox(page)).toBeFocused();
+    await expect(stories(page)).toHaveCount(2);
+    await page.keyboard.press("Escape");
+    await expect(page.locator("input[type=search]")).toHaveValue("");
+  });
+
+  test("select text is 16px for touch and 12px for a mouse, at any width", async ({
+    page,
+  }) => {
+    // A touch screen zooms in on a focused field under 16px.
+    const expected = isMobile(page) ? "16px" : "12px";
+    for (const width of [390, 900]) {
+      await page.setViewportSize({ width, height: 800 });
+      for (const name of ["Time range", "Source"]) {
+        await expect(page.getByRole("combobox", { name })).toHaveCSS(
+          "font-size",
+          expected,
+        );
+      }
     }
   });
 
@@ -481,7 +550,6 @@ test.describe("keyboard", () => {
           "News feed",
           "Saved stories",
           "Manage watchlist",
-          "Your watchlist",
           "All",
           ...DEFAULT,
           "Time range",
@@ -562,18 +630,46 @@ test.describe("keyboard", () => {
   });
 });
 
-test("scrolling to focus clears the header, search row and tab bar", async ({
+test("narrowing the window lets go of the hidden search field", async ({
   page,
 }) => {
-  // Browsers that align a focused element to the edge (rather than centring
-  // it, as Chromium does on Tab) rely on the page's scroll padding.
+  test.skip(isMobile(page), "starts on a desktop");
   await open(page);
-  const mobile = isMobile(page);
+  await searchBox(page).click();
+  await expect(searchBox(page)).toBeFocused();
+  await page.setViewportSize({ width: 400, height: 800 });
+  await expect(searchBox(page)).toBeHidden();
+  await expect(page.locator("input[type=search]")).not.toBeFocused();
+  const toggle = page.getByRole("button", { name: "Search" });
+  await expect(toggle).toHaveAttribute("aria-expanded", "false");
+  // The phone search still opens as usual, and the desktop shows it again.
+  await toggle.click();
+  await expect(searchBox(page)).toBeFocused();
+  await page.setViewportSize({ width: 1280, height: 800 });
+  await expect(searchBox(page)).toBeVisible();
+});
+
+// 32px is a phone layout even on the desktop's 1280px: `md` is 48rem.
+for (const fontSize of [16, 20, 32]) {
+  test(`scrolling to focus clears the header, search row and tab bar at a ${fontSize}px font`, async ({
+    page,
+  }) => {
+    // Browsers that align a focused element to the edge (rather than centring
+    // it, as Chromium does on Tab) rely on the page's scroll padding.
+    await setDefaultFontSize(page, fontSize);
+    await open(page);
+    await expectScrollPaddingClearsChrome(page);
+  });
+}
+
+async function expectScrollPaddingClearsChrome(page: Page) {
+  const tabs = page.getByRole("navigation", { name: "Tabs" });
+  const mobile = await tabs.isVisible();
   for (const searchOpen of mobile ? [false, true] : [false]) {
     if (searchOpen) await page.getByRole("button", { name: "Search" }).click();
     const header = (await page.getByRole("banner").boundingBox())!;
     const bottom = mobile
-      ? (await page.getByRole("navigation", { name: "Tabs" }).boundingBox())!.y
+      ? (await tabs.boundingBox())!.y
       : page.viewportSize()!.height;
     const links = page.getByRole("link", { name: /Original story/ });
     for (const [i, block] of [
@@ -591,7 +687,7 @@ test("scrolling to focus clears the header, search row and tab bar", async ({
       expect(box.y + box.height, `${block}`).toBeLessThanOrEqual(bottom + 1);
     }
   }
-});
+}
 
 test("/feed redirects signed-out visitors to /login", async ({ page }) => {
   await page.goto("/feed");

@@ -1,6 +1,10 @@
 import { expect, test, type Locator, type Page } from "@playwright/test";
 
-import { expectNoSidewaysScroll } from "./helpers";
+import {
+  expectNoSidewaysScroll,
+  expectTestPage,
+  setDefaultFontSize,
+} from "./helpers";
 
 // The boards cover 390 and 1440; these check the feed at the widths in
 // between and beyond, with the default watchlist and the longest one.
@@ -21,7 +25,12 @@ test.beforeEach(({}, testInfo) => {
 async function open(page: Page, width: number, tickers: string, height = 900) {
   await page.setViewportSize({ width, height });
   await page.goto(`/e2e-feed?tickers=${tickers}`);
-  await expect(page.locator("body[data-hydrated=true]")).toBeAttached();
+  await expectTestPage(
+    page,
+    page.locator("body[data-hydrated=true]"),
+    "/e2e-feed",
+    "E2E_FAKE_FEED",
+  );
   await page.evaluate(() => document.fonts.ready);
 }
 
@@ -279,46 +288,73 @@ test("at 390 the phone header and tab bar match the phone board", async ({
   expect(story.width).toBe(350);
 });
 
-test("a short window still reaches the sidebar's watchlist and profile", async ({
-  page,
-}) => {
-  await open(page, 1280, WATCHLISTS["50 tickers"], 600);
-  const sidebar = page.getByRole("complementary", { name: "Sidebar" });
-  const s = await box(sidebar);
-  expect(s.y + s.height).toBeLessThanOrEqual(600);
-  const watchlist = sidebar.getByRole("list", { name: "Your watchlist" });
-  // The watchlist scrolls inside itself, down to its last company.
-  const last = watchlist.getByRole("listitem").last();
-  await last.scrollIntoViewIfNeeded();
-  const l = await box(last);
-  expect(l.y).toBeGreaterThanOrEqual(s.y);
-  expect(l.y + l.height).toBeLessThanOrEqual(600);
-  // The profile is on screen without scrolling the page.
-  const profile = sidebar.getByText("Personal workspace");
-  await page.evaluate(() => window.scrollTo(0, 0));
-  const p = await box(profile);
-  expect(p.y + p.height).toBeLessThanOrEqual(600);
-  // Still true after scrolling the page.
-  await scrollToBottom(page);
-  const p2 = await box(profile);
-  expect(p2.y + p2.height).toBeLessThanOrEqual(600);
-  expect(p2.y).toBeGreaterThan(76);
-});
+/** The sidebar's elements (itself included) that scroll. */
+const scrollAreas = (sidebar: Locator) =>
+  sidebar.evaluate((aside) =>
+    [aside, ...aside.querySelectorAll("*")]
+      .filter((el) => {
+        const { overflowY } = getComputedStyle(el);
+        return (
+          ["auto", "scroll"].includes(overflowY) &&
+          el.scrollHeight > el.clientHeight
+        );
+      })
+      .map((el) => el.getAttribute("aria-label") ?? el.tagName),
+  );
+
+for (const [width, height] of [
+  [1280, 400],
+  [844, 390],
+  [1280, 600],
+]) {
+  for (const [label, tickers] of Object.entries(WATCHLISTS)) {
+    test(`a ${width}x${height} window reaches the whole sidebar with ${label}`, async ({
+      page,
+    }) => {
+      await open(page, width, tickers, height);
+      const sidebar = page.getByRole("complementary", { name: "Sidebar" });
+      const s = await box(sidebar);
+      expect(s.y + s.height).toBeLessThanOrEqual(height);
+      // One scroll area at most: never a list scrolling inside a scrolling
+      // sidebar.
+      const areas = await scrollAreas(sidebar);
+      expect(areas.length, areas.join(", ")).toBeLessThanOrEqual(1);
+      // The keyboard can reach the scroll area, and only when there is one.
+      if (areas.length) {
+        expect(areas).toEqual(["Sidebar"]);
+        await expect(sidebar).toHaveAttribute("tabindex", "0");
+      } else {
+        await expect(sidebar).not.toHaveAttribute("tabindex");
+      }
+
+      // The profile stays on screen, at the bottom of the sidebar, whether
+      // the page or the sidebar is scrolled.
+      const profile = sidebar.getByText("Personal workspace");
+      for (const scroll of ["top", "bottom"]) {
+        const to = scroll === "top" ? 0 : 1e6;
+        await page.evaluate((y) => window.scrollTo(0, y), to);
+        await sidebar.evaluate((el, y) => el.scrollTo(0, y), to);
+        await expect(profile).toBeInViewport();
+        const p = await box(profile);
+        expect(p.y + p.height, scroll).toBeLessThanOrEqual(s.y + s.height);
+      }
+      // Scrolled to the end, the last company clears the profile.
+      const rows = sidebar.getByRole("listitem");
+      const last = await box(rows.last());
+      const p = await box(profile.locator("xpath=../.."));
+      expect(last.y + last.height).toBeLessThanOrEqual(p.y + 1);
+      expect(last.y).toBeGreaterThanOrEqual(s.y);
+      // Scrolled back up, the first company is under the navigation.
+      await sidebar.evaluate((el) => el.scrollTo(0, 0));
+      await expect(rows.first()).toBeInViewport();
+    });
+  }
+}
 
 test("a landscape phone keeps the phone layout usable", async ({ page }) => {
   await open(page, 844, WATCHLISTS["3 tickers"], 390);
   await expectNoSidewaysScroll(page);
   const header = await box(page.getByRole("banner"));
-  const sidebar = page.getByRole("complementary", { name: "Sidebar" });
-  // 844 wide is the tablet layout: the sidebar must still fit the short window.
-  const s = await box(sidebar);
-  expect(s.y + s.height).toBeLessThanOrEqual(390);
-  // The sidebar scrolls within itself down to the profile.
-  const profile = sidebar.getByText("Personal workspace");
-  await profile.scrollIntoViewIfNeeded();
-  await expect(profile).toBeInViewport();
-  const p = await box(profile);
-  expect(p.y + p.height).toBeLessThanOrEqual(s.y + s.height);
   // Some content is visible under the header.
   expect(header.height).toBeLessThan(390 / 3);
   await scrollToBottom(page);
@@ -326,6 +362,66 @@ test("a landscape phone keeps the phone layout usable", async ({ page }) => {
     page.getByRole("button", { name: "Report a ticker mismatch" }),
   ).toBeInViewport();
 });
+
+/** The computed font size of every element holding text, in page order. */
+const textSizes = (page: Page) =>
+  page.evaluate(() =>
+    [...document.body.querySelectorAll("*:not(script, style)")]
+      .filter((el) =>
+        [...el.childNodes].some(
+          (node) =>
+            node.nodeType === Node.TEXT_NODE && node.textContent!.trim(),
+        ),
+      )
+      .map((el) => ({
+        text: el.textContent!.trim().slice(0, 30),
+        size: parseFloat(getComputedStyle(el).fontSize),
+      })),
+  );
+
+// A reader who doubles the default font size and has a window twice as wide
+// gets the same layout, so every text should be exactly twice the size.
+for (const width of [360, 800]) {
+  test(`all text follows a 32px default font, at ${width}px`, async ({
+    page,
+  }) => {
+    await open(page, width, WATCHLISTS["3 tickers"]);
+    const normal = await textSizes(page);
+    await setDefaultFontSize(page, 32);
+    await open(page, width * 2, WATCHLISTS["3 tickers"]);
+    const large = await textSizes(page);
+    expect(large.map(({ text }) => text)).toEqual(
+      normal.map(({ text }) => text),
+    );
+    const notDoubled = large.filter(
+      ({ size }, i) => Math.abs(size - 2 * normal[i].size) > 0.01,
+    );
+    expect(notDoubled).toEqual([]);
+  });
+}
+
+for (const [label, tickers] of Object.entries(WATCHLISTS)) {
+  test(`320px with a 32px default font has no sideways scroll, with ${label}`, async ({
+    page,
+  }) => {
+    await setDefaultFontSize(page, 32);
+    await open(page, 320, tickers);
+    await expectNoSidewaysScroll(page);
+    // Nothing pokes out of the window either, the fixed tab bar included.
+    const wide = await page.evaluate(() =>
+      [...document.querySelectorAll("body *")]
+        .filter((el) => {
+          const box = el.getBoundingClientRect();
+          return box.width > 0 && box.right > window.innerWidth + 0.5;
+        })
+        .filter((el) => !el.closest("[role=group]"))
+        .map((el) => el.outerHTML.slice(0, 80)),
+    );
+    expect(wide).toEqual([]);
+    await page.getByRole("button", { name: "Search" }).click();
+    await expectNoSidewaysScroll(page);
+  });
+}
 
 test("tab bar targets are at least 44px", async ({ page }) => {
   for (const width of [320, 390]) {

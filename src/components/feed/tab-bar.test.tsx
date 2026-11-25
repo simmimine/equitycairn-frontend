@@ -1,5 +1,7 @@
 import { fireEvent, render, screen, within } from "@testing-library/react";
-import { describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it } from "vitest";
+
+import { stubMatchMedia, stubResizeObserver } from "@/test-utils/dom-stubs";
 
 import { ComingSoonProvider } from "./coming-soon";
 import { TabBar } from "./tab-bar";
@@ -14,7 +16,22 @@ function renderTabBar() {
 
 const tabs = () => screen.getByRole("navigation", { name: "Tabs" });
 
+// jsdom has neither; the header, sidebar and tab bar use both.
+beforeEach(() => {
+  stubMatchMedia();
+  stubResizeObserver();
+});
+
 describe("TabBar", () => {
+  it("publishes its height for the page's scroll padding", () => {
+    const style = document.documentElement.style;
+    const { unmount } = renderTabBar();
+    // jsdom lays nothing out; the browser gives the real height.
+    expect(style.getPropertyValue("--feed-tab-bar-height")).toBe("0px");
+    unmount();
+    expect(style.getPropertyValue("--feed-tab-bar-height")).toBe("");
+  });
+
   it("marks the feed as the current page", () => {
     renderTabBar();
     const link = within(tabs()).getByRole("link", { name: "Feed" });

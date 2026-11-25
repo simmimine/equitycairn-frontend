@@ -2,6 +2,8 @@ import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
+import { stubMatchMedia, stubResizeObserver } from "@/test-utils/dom-stubs";
+
 const requireUser = vi.fn();
 const signOut = vi.hoisted(() => vi.fn());
 const getProfile = vi.fn();
@@ -19,6 +21,9 @@ vi.mock("next/navigation", () => ({ redirect: (u: string) => redirect(u) }));
 import { FeedContent } from "./feed-content";
 
 beforeEach(() => {
+  // jsdom has neither; the feed's header, sidebar and tab bar use both.
+  stubMatchMedia();
+  stubResizeObserver();
   vi.clearAllMocks();
   requireUser.mockResolvedValue({ id: "u1" });
 });

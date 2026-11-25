@@ -8,7 +8,7 @@ describe("TickerChip", () => {
     render(<TickerChip ticker="BRK.B" />);
     expect(screen.getByText("BRK.B")).toHaveClass(
       "min-h-6",
-      "min-w-[52px]",
+      "min-w-[3.25rem]",
       "rounded-[7px]",
       "bg-secondary",
     );

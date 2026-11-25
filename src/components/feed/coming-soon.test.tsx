@@ -173,6 +173,104 @@ describe("ComingSoonProvider", () => {
     expect(screen.getByRole("status")).toBeEmptyDOMElement();
   });
 
+  const trigger = (name: string) => screen.getByRole("button", { name });
+  /** Clicks a control the way a keyboard user does: focused first. */
+  const pressFocused = (name: string) => {
+    act(() => trigger(name).focus());
+    press(name);
+  };
+  const escape = () =>
+    fireEvent.keyDown(document.activeElement!, { key: "Escape" });
+
+  it("hands focus back to the control that opened it on Dismiss", () => {
+    renderProvider();
+    pressFocused("Help");
+    focus();
+    press("Dismiss");
+    expect(screen.getByRole("status")).toBeEmptyDOMElement();
+    expect(trigger("Help")).toHaveFocus();
+  });
+
+  it("hands focus back to the latest control when a second replaced it", () => {
+    renderProvider();
+    pressFocused("Help");
+    pressFocused("Profile");
+    focus();
+    press("Dismiss");
+    expect(trigger("Profile")).toHaveFocus();
+  });
+
+  it("keeps the opener when a new notice is asked for from inside one", () => {
+    renderProvider();
+    pressFocused("Help");
+    focus();
+    // A click that does not move focus, e.g. a shortcut.
+    press("Profile");
+    press("Dismiss");
+    expect(trigger("Help")).toHaveFocus();
+  });
+
+  it("leaves focus alone when it was not in the notice", () => {
+    renderProvider();
+    pressFocused("Help");
+    act(() => trigger("Profile").focus());
+    press("Dismiss");
+    expect(trigger("Profile")).toHaveFocus();
+  });
+
+  it("leaves focus in the notice's place when the control is gone", () => {
+    const { rerender } = render(
+      <ComingSoonProvider>
+        <Trigger feature="Help" />
+      </ComingSoonProvider>,
+    );
+    pressFocused("Help");
+    focus();
+    rerender(<ComingSoonProvider>{null}</ComingSoonProvider>);
+    press("Dismiss");
+    expect(screen.getByRole("status")).toBeEmptyDOMElement();
+    expect(document.body).toHaveFocus();
+  });
+
+  it("closes on Escape, handing focus back from inside it", () => {
+    renderProvider();
+    pressFocused("Help");
+    focus();
+    const notPrevented = escape();
+    expect(notPrevented).toBe(false);
+    expect(screen.getByRole("status")).toBeEmptyDOMElement();
+    expect(trigger("Help")).toHaveFocus();
+    // React's own zero-delay work first; no hide timer is left behind.
+    wait(0);
+    expect(vi.getTimerCount()).toBe(0);
+  });
+
+  it("closes on Escape pressed anywhere, leaving focus where it is", () => {
+    renderProvider();
+    pressFocused("Help");
+    act(() => trigger("Profile").focus());
+    escape();
+    expect(screen.getByRole("status")).toBeEmptyDOMElement();
+    expect(trigger("Profile")).toHaveFocus();
+  });
+
+  it("leaves Escape alone with no notice, or one already handled", () => {
+    renderProvider();
+    expect(escape()).toBe(true);
+    press("Help");
+    expect(fireEvent.keyDown(document.body, { key: "Enter" })).toBe(true);
+    const handled = new KeyboardEvent("keydown", {
+      key: "Escape",
+      bubbles: true,
+      cancelable: true,
+    });
+    handled.preventDefault();
+    document.body.dispatchEvent(handled);
+    expect(message()).toBeInTheDocument();
+    press("Dismiss");
+    expect(escape()).toBe(true);
+  });
+
   it("gives Dismiss the focus ring", () => {
     renderProvider();
     press("Help");

@@ -9,7 +9,8 @@ import { StoryCard } from "./story-card";
 const notice = vi.hoisted(() => vi.fn());
 
 vi.mock("./coming-soon", () => ({ useComingSoon: () => notice }));
-vi.mock("@/lib/feed/format", () => ({
+vi.mock("@/lib/feed/format", async (importOriginal) => ({
+  webLink: (await importOriginal<typeof import("@/lib/feed/format")>()).webLink,
   formatPublished: (iso: string) => `published ${iso}`,
   coverageLabel: (story: { linkCount: number }) =>
     `coverage of ${story.linkCount}`,
@@ -71,6 +72,17 @@ describe("StoryCard", () => {
     expect(link).toHaveAttribute("rel", "noopener noreferrer");
   });
 
+  it.each(["javascript:alert(1)", "data:text/html,hi", "/relative"])(
+    "shows no link to an original at %s",
+    (originalUrl) => {
+      render(<StoryCard story={{ ...story, originalUrl }} />);
+      expect(screen.queryByRole("link")).not.toBeInTheDocument();
+      expect(screen.queryByText(/original story/i)).not.toBeInTheDocument();
+      // The rest of the card is still there.
+      expect(screen.getByText("coverage of 3")).toBeInTheDocument();
+    },
+  );
+
   it("says coverage is coming soon", async () => {
     render(<StoryCard story={story} />);
     await userEvent.click(
@@ -82,8 +94,8 @@ describe("StoryCard", () => {
   it("draws the NEW badge as a secondary pill", () => {
     render(<StoryCard story={story} />);
     expect(screen.getByText("NEW")).toHaveClass(
-      "h-[22px]",
-      "w-[42px]",
+      "h-[1.375rem]",
+      "w-[2.625rem]",
       "rounded-full",
       "bg-secondary",
       "text-link",

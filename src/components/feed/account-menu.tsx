@@ -20,7 +20,7 @@ export function UserInitial({
     <span
       aria-hidden="true"
       className={cn(
-        "flex size-[30px] shrink-0 items-center justify-center rounded-full bg-secondary text-[13px] font-bold text-link md:size-[34px]",
+        "flex size-[1.875rem] shrink-0 items-center justify-center rounded-full bg-secondary text-[0.8125rem] font-bold text-link md:size-[2.125rem]",
         className,
       )}
     >

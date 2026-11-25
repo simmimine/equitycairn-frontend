@@ -120,14 +120,20 @@ describe("FeedFilterBar", () => {
   });
 
   it.each(["Time range", "Source"])(
-    "keeps the %s select at 16px on phones, muted",
+    "keeps the %s select at 16px for touch at any width, 12px for a mouse",
     (name) => {
       const { select } = setup();
+      // iOS zooms in on a focused field under 16px, landscape phones too.
       expect(select(name)).toHaveClass(
         "text-base",
-        "md:text-xs",
+        "pointer-fine:text-xs",
         "text-muted-foreground",
       );
+      expect(select(name)).not.toHaveClass("md:text-xs");
+      // The invisible copy that places the chevron matches the select's text.
+      const face = select(name).parentElement!.querySelector("[data-label]");
+      expect(face).toHaveClass("text-base", "pointer-fine:text-xs");
+      expect(face).not.toHaveClass("md:text-xs");
     },
   );
 

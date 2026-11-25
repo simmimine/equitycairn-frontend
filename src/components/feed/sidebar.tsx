@@ -3,6 +3,7 @@
 import { cn } from "cn";
 import { Bookmark, Newspaper } from "lucide-react";
 import Link from "next/link";
+import { useEffect, useRef, useState } from "react";
 
 import type { Company } from "@/lib/feed/types";
 
@@ -11,7 +12,7 @@ import { useComingSoon } from "./coming-soon";
 import { FOCUS_RING } from "./styles";
 
 const NAV_ITEM =
-  "flex h-[42px] shrink-0 items-center gap-3 rounded-[10px] px-3 text-left text-sm font-medium outline-none focus-visible:ring-3 focus-visible:ring-ring/50";
+  "flex h-[2.625rem] shrink-0 items-center gap-3 rounded-[10px] px-3 text-left text-sm font-medium outline-none focus-visible:ring-3 focus-visible:ring-ring/50";
 
 export function Sidebar({
   companies,
@@ -21,10 +22,20 @@ export function Sidebar({
   firstName: string | null;
 }) {
   const comingSoon = useComingSoon();
+  const aside = useRef<HTMLElement>(null);
+  const scrolls = useScrolls(aside);
   return (
     <aside
+      ref={aside}
       aria-label="Sidebar"
-      className="sticky hidden w-[220px] shrink-0 flex-col gap-[26px] self-start overflow-y-auto border-r bg-card px-3 pt-[22px] pb-5 md:top-[76px] md:flex md:h-[calc(100dvh-76px)] lg:w-[260px] lg:px-4"
+      // The one scroll area, for short windows and long watchlists. Focusable
+      // only then, so the keyboard can scroll it.
+      tabIndex={scrolls ? 0 : undefined}
+      className={cn(
+        FOCUS_RING,
+        // Below the header: 4.6875rem plus its 1px border (see AppHeader).
+        "sticky hidden w-[13.75rem] shrink-0 flex-col gap-[26px] self-start overflow-y-auto border-r bg-card px-3 pt-[22px] focus-visible:ring-inset md:top-[calc(4.6875rem+1px)] md:flex md:h-[calc(100dvh-4.6875rem-1px)] lg:w-[16.25rem] lg:px-4",
+      )}
     >
       <nav aria-label="Main" className="flex flex-col gap-2.5">
         <Link
@@ -44,9 +55,9 @@ export function Sidebar({
           Saved stories
         </button>
       </nav>
-      <div className="flex min-h-32 flex-1 flex-col gap-2">
+      <div className="flex flex-1 flex-col gap-2">
         <div className="flex h-4 items-center justify-between gap-2 px-3">
-          <h2 className="text-[11px] font-bold tracking-wide whitespace-nowrap text-muted-foreground uppercase">
+          <h2 className="text-[0.6875rem] font-bold tracking-wide whitespace-nowrap text-muted-foreground uppercase">
             Your watchlist
           </h2>
           <button
@@ -61,12 +72,7 @@ export function Sidebar({
             Manage
           </button>
         </div>
-        <ul
-          aria-label="Your watchlist"
-          // Focusable so the keyboard can scroll a long watchlist.
-          tabIndex={0}
-          className={cn(FOCUS_RING, "min-h-0 overflow-y-auto rounded-[10px]")}
-        >
+        <ul aria-label="Your watchlist">
           {companies.map(({ ticker, name }) => (
             <li key={ticker} className="flex min-h-12 items-center gap-3 px-3">
               <span
@@ -87,7 +93,8 @@ export function Sidebar({
           ))}
         </ul>
       </div>
-      <div className="flex items-center gap-3 px-3 pt-4">
+      {/* Stays in view while a long watchlist scrolls under it. */}
+      <div className="sticky bottom-0 flex items-center gap-3 bg-card px-3 pt-4 pb-5">
         <UserInitial firstName={firstName} />
         <div className="flex min-w-0 flex-col">
           <p className="truncate text-sm font-semibold">
@@ -100,4 +107,20 @@ export function Sidebar({
       </div>
     </aside>
   );
+}
+
+/** Whether the element has more content than fits, kept up to date. */
+function useScrolls(ref: React.RefObject<HTMLElement | null>) {
+  const [scrolls, setScrolls] = useState(false);
+  useEffect(() => {
+    const element = ref.current!;
+    const check = () => setScrolls(element.scrollHeight > element.clientHeight);
+    check();
+    // The window's height changes the box; the watchlist, its content.
+    const observer = new ResizeObserver(check);
+    observer.observe(element);
+    for (const child of element.children) observer.observe(child);
+    return () => observer.disconnect();
+  }, [ref]);
+  return scrolls;
 }

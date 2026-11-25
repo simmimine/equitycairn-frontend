@@ -9,6 +9,7 @@ import {
   useLayoutEffect,
   useRef,
   useState,
+  useSyncExternalStore,
 } from "react";
 import { flushSync } from "react-dom";
 
@@ -17,8 +18,33 @@ import { Input } from "@/components/ui/input";
 
 import { AccountMenu } from "./account-menu";
 import { useComingSoon } from "./coming-soon";
+import { useHeightVariable } from "./use-height-variable";
 
 const SEARCH_LABEL = "Search companies, tickers, or stories";
+
+/** Tailwind's `md`: from here the search field is always on screen. */
+const DESKTOP = "(min-width: 48rem)";
+
+const isDesktop = () => window.matchMedia(DESKTOP).matches;
+
+/** True for Ctrl+K or ⌘K, on any keyboard layout. */
+function isSearchShortcut(event: KeyboardEvent) {
+  if (!(event.metaKey || event.ctrlKey)) return false;
+  if (event.altKey || event.shiftKey) return false;
+  // A Latin layout names the letter (Dvorak's K key types T). A layout in
+  // another script gives a letter of its own, so go by the key's place,
+  // where QWERTY has K.
+  if (/^[a-z]$/i.test(event.key)) return event.key.toLowerCase() === "k";
+  return /^\p{L}$/u.test(event.key) && event.code === "KeyK";
+}
+
+// The platform never changes, so there is nothing to subscribe to.
+const noChanges = () => () => {};
+const shortcutHint = () =>
+  /Mac|iPhone|iPad|iPod/.test(navigator.platform) ? "⌘ K" : "Ctrl K";
+// The server cannot know the platform: no hint until hydrated, so the
+// server and first client render agree.
+const noHint = () => null;
 
 export function AppHeader({
   query,
@@ -34,6 +60,10 @@ export function AppHeader({
   const comingSoon = useComingSoon();
   const input = useRef<HTMLInputElement>(null);
   const toggle = useRef<HTMLButtonElement>(null);
+  const header = useRef<HTMLElement>(null);
+  // For the page's scroll padding (globals.css); the phone search row, a
+  // larger font or a wrapped row all make the header taller.
+  useHeightVariable(header, "--feed-header-height");
   // Only phones hide the field; from `md` it is always on screen.
   const [open, setOpen] = useState(false);
   const shown = open || query !== "";
@@ -55,9 +85,7 @@ export function AppHeader({
 
   useEffect(() => {
     function onKeyDown(event: KeyboardEvent) {
-      if (!(event.metaKey || event.ctrlKey)) return;
-      if (event.altKey || event.shiftKey) return;
-      if (event.key.toLowerCase() !== "k") return;
+      if (!isSearchShortcut(event)) return;
       event.preventDefault();
       openSearch();
     }
@@ -65,16 +93,29 @@ export function AppHeader({
     return () => window.removeEventListener("keydown", onKeyDown);
   }, [openSearch]);
 
+  // Crossing `md` starts the phone row closed. An empty field is then hidden
+  // on a phone, and focus must not stay on something hidden.
+  useEffect(() => {
+    const desktop = window.matchMedia(DESKTOP);
+    function onChange() {
+      setOpen(false);
+      const field = input.current;
+      if (!desktop.matches && field === document.activeElement) {
+        if (field?.value === "") field.blur();
+      }
+    }
+    desktop.addEventListener("change", onChange);
+    return () => desktop.removeEventListener("change", onChange);
+  }, []);
+
+  const hint = useSyncExternalStore(noChanges, shortcutHint, noHint);
+
   return (
-    <header
-      // Phones only: globals.css clears this taller header when scrolling to focus.
-      data-search-open={shown || undefined}
-      className="sticky top-0 z-20 border-b bg-card"
-    >
+    <header ref={header} className="sticky top-0 z-20 border-b bg-card">
       <div className="flex flex-wrap items-center gap-x-3 px-5 md:grid md:grid-cols-[1fr_minmax(0,510px)_1fr] md:gap-x-6 md:px-8">
         <Link
           href="/feed"
-          className="flex h-[63px] w-fit items-center text-[17px] font-bold md:h-[75px] md:text-[19px]"
+          className="flex h-[3.9375rem] w-fit items-center text-[1.0625rem] font-bold md:h-[4.6875rem] md:text-[1.1875rem]"
         >
           equitycairn
         </Link>
@@ -86,7 +127,7 @@ export function AppHeader({
         >
           <Search
             aria-hidden="true"
-            className="pointer-events-none absolute top-[13px] left-3.5 size-4 text-muted-foreground"
+            className="pointer-events-none absolute top-[0.8125rem] left-3.5 size-4 text-muted-foreground"
           />
           <Input
             ref={input}
@@ -95,23 +136,29 @@ export function AppHeader({
             placeholder={SEARCH_LABEL}
             value={query}
             onChange={(event) => onQueryChange(event.target.value)}
-            onFocus={() => setOpen(true)}
+            // Only a phone has a row to open; on a desktop it would be left
+            // open, and empty, for when the window narrows.
+            onFocus={() => isDesktop() || setOpen(true)}
             onKeyDown={(event) => {
               if (event.key !== "Escape") return;
+              // An open notice took this Escape (see ComingSoonProvider).
+              if (event.nativeEvent.defaultPrevented) return;
               event.preventDefault();
               closeSearch();
               // Does nothing from `md`, where the button is not displayed.
               toggle.current?.focus();
             }}
             // 16px on touch screens of any width, or iOS zooms in on focus.
-            className="h-[42px] rounded-[11px] bg-background pl-10 md:pr-14 md:text-base md:pointer-fine:text-sm"
+            className="h-[2.625rem] rounded-[11px] bg-background pl-10 md:pr-14 md:text-base md:pointer-fine:text-sm"
           />
-          <kbd
-            aria-hidden="true"
-            className="pointer-events-none absolute top-1/2 right-3 hidden -translate-y-1/2 rounded-md border px-1.5 font-sans text-[11px] text-muted-foreground md:block"
-          >
-            ⌘ K
-          </kbd>
+          {hint && (
+            <kbd
+              aria-hidden="true"
+              className="pointer-events-none absolute top-1/2 right-3 hidden -translate-y-1/2 rounded-md border px-1.5 font-sans text-[0.6875rem] text-muted-foreground md:block"
+            >
+              {hint}
+            </kbd>
+          )}
         </div>
         <div className="ml-auto flex items-center gap-2 md:justify-self-end">
           <Button

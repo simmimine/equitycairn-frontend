@@ -1,7 +1,8 @@
 import { fireEvent, render, screen, within } from "@testing-library/react";
-import { describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it } from "vitest";
 
 import type { Company } from "@/lib/feed/types";
+import { stubMatchMedia, stubResizeObserver } from "@/test-utils/dom-stubs";
 
 import { ComingSoonProvider } from "./coming-soon";
 import { Sidebar } from "./sidebar";
@@ -18,6 +19,12 @@ function renderSidebar(
 }
 
 const watchlist = () => screen.getByRole("list", { name: "Your watchlist" });
+
+// jsdom has neither; the header, sidebar and tab bar use both.
+beforeEach(() => {
+  stubMatchMedia();
+  stubResizeObserver();
+});
 
 describe("Sidebar", () => {
   it("marks the news feed as the current page", () => {
@@ -82,10 +89,61 @@ describe("Sidebar", () => {
     expect(aside).toContainElement(watchlist());
   });
 
-  it("lets the keyboard reach the scrolling watchlist", () => {
-    renderSidebar();
-    expect(watchlist()).toHaveAttribute("tabindex", "0");
-    expect(watchlist()).toHaveClass("focus-visible:ring-3");
+  describe("scrolling", () => {
+    const sidebar = () =>
+      screen.getByRole("complementary", { name: "Sidebar" });
+    /** Sets the sizes jsdom does not lay out. */
+    const size = (scrollHeight: number, clientHeight = 300) => {
+      Object.defineProperty(sidebar(), "scrollHeight", {
+        value: scrollHeight,
+        configurable: true,
+      });
+      Object.defineProperty(sidebar(), "clientHeight", {
+        value: clientHeight,
+        configurable: true,
+      });
+    };
+
+    it("scrolls as one area: the watchlist does not scroll on its own", () => {
+      renderSidebar();
+      expect(sidebar()).toHaveClass("overflow-y-auto");
+      expect(watchlist()).not.toHaveClass("overflow-y-auto");
+      expect(watchlist()).not.toHaveAttribute("tabindex");
+    });
+
+    it("is a Tab stop only while it has something to scroll", () => {
+      const observer = stubResizeObserver();
+      renderSidebar();
+      expect(sidebar()).not.toHaveAttribute("tabindex");
+      size(900);
+      observer.resize();
+      expect(sidebar()).toHaveAttribute("tabindex", "0");
+      expect(sidebar()).toHaveClass(
+        "focus-visible:ring-3",
+        "focus-visible:ring-inset",
+      );
+      size(300);
+      observer.resize();
+      expect(sidebar()).not.toHaveAttribute("tabindex");
+    });
+
+    it("watches the sidebar and each of its parts for size changes", () => {
+      const observer = stubResizeObserver();
+      const { unmount } = renderSidebar();
+      expect(observer.observed()).toEqual([
+        sidebar(),
+        ...Array.from(sidebar().children),
+      ]);
+      unmount();
+      expect(observer.observed()).toEqual([]);
+    });
+
+    it("keeps the profile at the bottom, over the rows scrolling under it", () => {
+      renderSidebar();
+      const profile =
+        screen.getByText("Personal workspace").parentElement!.parentElement!;
+      expect(profile).toHaveClass("sticky", "bottom-0", "bg-card");
+    });
   });
 
   it("draws round link-coloured markers and avatar", () => {

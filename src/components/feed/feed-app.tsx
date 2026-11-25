@@ -79,7 +79,7 @@ export function FeedApp({
       />
       <div className="flex">
         <Sidebar companies={companies} firstName={firstName} />
-        <main className="min-w-0 flex-1 px-5 pt-6 pb-[calc(66px+env(safe-area-inset-bottom)+32px)] md:px-10 md:pt-8 md:pb-12">
+        <main className="min-w-0 flex-1 px-5 pt-6 pb-[calc(4.125rem+env(safe-area-inset-bottom)+2rem)] md:px-10 md:pt-8 md:pb-12">
           <div className="mx-auto grid w-full max-w-[600px] gap-y-6 md:max-w-[680px] xl:max-w-[1100px] xl:grid-cols-[minmax(0,680px)_390px] xl:grid-rows-[auto_auto_auto_1fr] xl:gap-x-[30px]">
             <div className="flex min-w-0 flex-col gap-4 xl:col-start-1">
               <div className="flex flex-col gap-1.5">
@@ -88,7 +88,7 @@ export function FeedApp({
                   tabIndex={-1}
                   className={cn(
                     FOCUS_RING,
-                    "rounded-sm text-[23px] font-bold md:text-[28px]",
+                    "rounded-sm text-[1.4375rem] font-bold md:text-[1.75rem]",
                   )}
                 >
                   News for your watchlist
@@ -108,7 +108,7 @@ export function FeedApp({
                     filters={filters}
                     onChange={setFilters}
                   />
-                  <div className="hidden items-center justify-between gap-3 text-[11px] text-muted-foreground md:flex">
+                  <div className="hidden items-center justify-between gap-3 text-[0.6875rem] text-muted-foreground md:flex">
                     <span className="font-semibold">Newest first</span>
                     <span className="font-medium">Example items</span>
                   </div>
@@ -174,7 +174,7 @@ export function FeedApp({
                   <ReportMismatch />
                 </div>
 
-                <p className="hidden text-[11px] text-muted-foreground md:block xl:col-start-1 xl:mt-6">
+                <p className="hidden text-[0.6875rem] text-muted-foreground md:block xl:col-start-1 xl:mt-6">
                   Example content only · sources shown here are placeholders.
                 </p>
               </>
