@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1440" height="810" viewBox="0 0 1440 810" fill="none">
+  <defs>
+    <radialGradient id="mist" cx="0" cy="0" r="1" gradientTransform="matrix(780 520 -420 630 1250 170)" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#D1F2F5" stop-opacity=".56"/>
+      <stop offset="1" stop-color="#F4FCFD" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="thread" x1="610" x2="1290" y1="80" y2="730" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#366FBF" stop-opacity=".11"/>
+      <stop offset="1" stop-color="#2A8A94" stop-opacity=".035"/>
+    </linearGradient>
+  </defs>
+  <rect width="1440" height="810" fill="#F4FCFD"/>
+  <path d="M650 0h790v810H650z" fill="url(#mist)"/>
+  <path d="M650 0c180 130 188 205 322 246s246 6 468 93" stroke="url(#thread)" stroke-width="2"/>
+  <path d="M660 0c180 142 185 216 317 257s246 8 463 96" stroke="url(#thread)" stroke-width="2"/>
+  <circle cx="970" cy="249" r="4" fill="#366FBF" fill-opacity=".24"/>
+  <circle cx="1435" cy="339" r="4" fill="#2A8A94" fill-opacity=".24"/>
+</svg>

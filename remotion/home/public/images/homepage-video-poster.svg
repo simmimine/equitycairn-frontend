@@ -1,0 +1,39 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1440" height="810" viewBox="0 0 1440 810" fill="none">
+  <defs>
+    <radialGradient id="mist" cx="0" cy="0" r="1" gradientTransform="matrix(780 520 -420 630 1250 170)" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#D1F2F5" stop-opacity=".56"/>
+      <stop offset="1" stop-color="#F4FCFD" stop-opacity="0"/>
+    </radialGradient>
+    <filter id="shadow" x="450" y="202" width="935" height="522" color-interpolation-filters="sRGB" filterUnits="userSpaceOnUse">
+      <feGaussianBlur stdDeviation="24"/>
+    </filter>
+  </defs>
+  <rect width="1440" height="810" fill="#F4FCFD"/>
+  <path d="M650 0h790v810H650z" fill="url(#mist)"/>
+  <path d="M650 0c180 130 188 205 322 246s246 6 468 93M660 0c180 142 185 216 317 257s246 8 463 96" stroke="#366FBF" stroke-opacity=".09" stroke-width="2"/>
+  <text x="104" y="259" fill="#071F22" font-family="Inter,Helvetica Neue,Arial,sans-serif" font-size="60" font-weight="650" letter-spacing="-3">Less noise.</text>
+  <text x="104" y="326" fill="#366FBF" font-family="Inter,Helvetica Neue,Arial,sans-serif" font-size="60" font-weight="650" letter-spacing="-3">More signal.</text>
+  <text x="106" y="384" fill="#46666B" font-family="Inter,Helvetica Neue,Arial,sans-serif" font-size="22">Coverage, organized around</text>
+  <text x="106" y="416" fill="#46666B" font-family="Inter,Helvetica Neue,Arial,sans-serif" font-size="22">the companies you follow.</text>
+  <rect x="492" y="251" width="850" height="458" rx="26" fill="#071F22" fill-opacity=".08" filter="url(#shadow)"/>
+  <rect x="492.5" y="223.5" width="849" height="457" rx="25.5" fill="#fff" stroke="#C7E2E5"/>
+  <path d="M518 224h798a26 26 0 0 1 26 26v64H492v-64a26 26 0 0 1 26-26Z" fill="#D1F2F5"/>
+  <text x="522" y="277" fill="#071F22" font-family="Inter,Helvetica Neue,Arial,sans-serif" font-size="25" font-weight="700" letter-spacing="-1">ACME</text>
+  <text x="608" y="276" fill="#46666B" font-family="Inter,Helvetica Neue,Arial,sans-serif" font-size="17">Watchlist coverage</text>
+  <rect x="1201" y="248" width="113" height="31" rx="16" fill="#fff" fill-opacity=".82"/>
+  <text x="1214" y="269" fill="#46666B" font-family="Inter,Helvetica Neue,Arial,sans-serif" font-size="12" font-weight="700" letter-spacing=".5">ILLUSTRATIVE</text>
+  <text x="522" y="345" fill="#69868A" font-family="Inter,Helvetica Neue,Arial,sans-serif" font-size="15" font-weight="700" letter-spacing="1.2">GROUPED FOR ONE COMPANY</text>
+  <text x="522" y="379" fill="#071F22" font-family="Inter,Helvetica Neue,Arial,sans-serif" font-size="26" font-weight="650" letter-spacing="-.7">Recent coverage</text>
+  <path d="M493 398h849M493 502h849M493 606h849" stroke="#C7E2E5"/>
+  <text x="522" y="448" fill="#69868A" font-family="Inter,Helvetica Neue,Arial,sans-serif" font-size="18">09:42</text>
+  <text x="616" y="444" fill="#071F22" font-family="Inter,Helvetica Neue,Arial,sans-serif" font-size="21" font-weight="650">Example coverage: product update</text>
+  <text x="616" y="474" fill="#46666B" font-family="Inter,Helvetica Neue,Arial,sans-serif" font-size="16">Example source A · Example source B</text>
+  <rect x="1220" y="431" width="94" height="30" rx="15" fill="#F4FCFD"/>
+  <text x="1230" y="451" fill="#366FBF" font-family="Inter,Helvetica Neue,Arial,sans-serif" font-size="13">2 sources</text>
+  <text x="522" y="552" fill="#69868A" font-family="Inter,Helvetica Neue,Arial,sans-serif" font-size="18">09:18</text>
+  <text x="616" y="548" fill="#071F22" font-family="Inter,Helvetica Neue,Arial,sans-serif" font-size="21" font-weight="650">Example coverage: company overview</text>
+  <text x="616" y="578" fill="#46666B" font-family="Inter,Helvetica Neue,Arial,sans-serif" font-size="16">Example source A · Example source C</text>
+  <rect x="1220" y="535" width="94" height="30" rx="15" fill="#F4FCFD"/>
+  <text x="1230" y="555" fill="#366FBF" font-family="Inter,Helvetica Neue,Arial,sans-serif" font-size="13">2 sources</text>
+  <text x="106" y="762" fill="#69868A" font-family="Inter,Helvetica Neue,Arial,sans-serif" font-size="15">Illustrative content · Not investment advice</text>
+</svg>
