@@ -13,7 +13,7 @@ const FOCUS =
   "outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50";
 
 const SELECT = cn(
-  "h-8 max-w-full min-w-[120px] rounded-[10px] border border-input bg-card px-2 text-xs font-medium text-foreground",
+  "h-8 max-w-full min-w-[120px] rounded-[10px] border border-input bg-card px-2 text-base font-medium text-muted-foreground md:text-xs",
   FOCUS,
 );
 
@@ -29,7 +29,7 @@ function TickerPill({
         "h-[29px] shrink-0 rounded-full border px-3.5 text-[11px] font-bold md:h-8 md:text-xs",
         pressed
           ? "border-primary bg-primary text-primary-foreground"
-          : "bg-card text-foreground hover:bg-secondary",
+          : "border-input bg-card text-muted-foreground hover:bg-secondary",
         FOCUS,
       )}
       {...props}

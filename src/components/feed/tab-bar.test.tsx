@@ -48,4 +48,12 @@ describe("TabBar", () => {
     fireEvent.click(within(tabs()).getByRole("button", { name }));
     expect(screen.getByRole("status")).toHaveTextContent(notice);
   });
+
+  it("marks the current tab with a bar, not only colour", () => {
+    renderTabBar();
+    const bar = '[data-slot="tab-indicator"]';
+    const link = within(tabs()).getByRole("link", { name: "Feed" });
+    expect(link.querySelector(bar)).toHaveAttribute("aria-hidden", "true");
+    expect(tabs().querySelectorAll(bar)).toHaveLength(1);
+  });
 });

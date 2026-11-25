@@ -145,4 +145,26 @@ describe("AppHeader", () => {
       "Help is coming soon.",
     );
   });
+
+  it("shows help as a muted question mark", () => {
+    render(<Harness />);
+    const help = screen.getByRole("button", { name: "Help" });
+    expect(help).toHaveTextContent(/^\?$/);
+    expect(help).toHaveClass(
+      "text-sm",
+      "font-semibold",
+      "text-muted-foreground",
+      "focus-visible:ring-3",
+    );
+  });
+
+  it("keeps the search text at 16px except with a fine pointer", () => {
+    render(<Harness />);
+    expect(input()).toHaveClass(
+      "text-base",
+      "md:text-base",
+      "md:pointer-fine:text-sm",
+    );
+    expect(input()).not.toHaveClass("md:text-sm");
+  });
 });

@@ -78,4 +78,42 @@ describe("StoryCard", () => {
     );
     expect(notice).toHaveBeenCalledWith("Coverage view");
   });
+
+  it("draws the NEW badge as a secondary pill", () => {
+    render(<StoryCard story={story} />);
+    expect(screen.getByText("NEW")).toHaveClass(
+      "h-[22px]",
+      "w-[42px]",
+      "rounded-full",
+      "bg-secondary",
+      "text-link",
+    );
+  });
+
+  it("describes both actions with the headline", () => {
+    render(<StoryCard story={story} />);
+    for (const action of [
+      screen.getByRole("link", { name: /original story/i }),
+      screen.getByRole("button", { name: /view coverage/i }),
+    ]) {
+      expect(action).toHaveAccessibleDescription(story.headline);
+    }
+  });
+
+  it("gives the original link a focus ring and a 24px target", () => {
+    render(<StoryCard story={story} />);
+    expect(screen.getByRole("link")).toHaveClass(
+      "focus-visible:ring-3",
+      "py-1",
+      "-my-1",
+    );
+  });
+
+  it("lets a long publisher name wrap", () => {
+    render(<StoryCard story={story} />);
+    expect(screen.getByText("Example Wire")).toHaveClass(
+      "min-w-0",
+      "break-words",
+    );
+  });
 });

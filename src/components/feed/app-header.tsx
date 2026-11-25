@@ -90,7 +90,8 @@ export function AppHeader({
               // Does nothing from `md`, where the button is not displayed.
               toggle.current?.focus();
             }}
-            className="h-[42px] rounded-[11px] bg-background pl-10 md:pr-14"
+            // 16px on touch screens of any width, or iOS zooms in on focus.
+            className="h-[42px] rounded-[11px] bg-background pl-10 md:pr-14 md:text-base md:pointer-fine:text-sm"
           />
           <kbd
             aria-hidden="true"
@@ -113,10 +114,12 @@ export function AppHeader({
           </Button>
           <Button
             variant="ghost"
+            size="icon"
+            aria-label="Help"
             onClick={() => comingSoon("Help")}
-            className="hidden text-muted-foreground md:inline-flex"
+            className="hidden text-sm font-semibold text-muted-foreground md:inline-flex"
           >
-            Help
+            ?
           </Button>
           <AccountMenu firstName={firstName} signOutAction={signOutAction} />
         </div>

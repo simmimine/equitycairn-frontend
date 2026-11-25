@@ -21,7 +21,17 @@ export function TabBar() {
       aria-label="Tabs"
       className="fixed inset-x-0 bottom-0 z-20 flex h-[calc(66px+env(safe-area-inset-bottom))] border-t bg-card pb-[env(safe-area-inset-bottom)] md:hidden"
     >
-      <Link href="/feed" aria-current="page" className={`${TAB} text-link`}>
+      <Link
+        href="/feed"
+        aria-current="page"
+        className={`${TAB} relative text-link`}
+      >
+        {/* Marks the current tab without relying on colour. */}
+        <span
+          aria-hidden="true"
+          data-slot="tab-indicator"
+          className="absolute top-0 h-[3px] w-6 rounded-b-full bg-link"
+        />
         <Newspaper className="size-5" />
         Feed
       </Link>

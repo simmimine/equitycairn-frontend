@@ -1,4 +1,5 @@
 import { fireEvent, render, screen } from "@testing-library/react";
+import { Activity } from "react";
 import { describe, expect, it, vi } from "vitest";
 
 import { AccountMenu } from "./account-menu";
@@ -41,5 +42,29 @@ describe("AccountMenu", () => {
     await vi.waitFor(() => {
       expect(signOutAction).toHaveBeenCalledTimes(1);
     });
+  });
+
+  it("colours the initial as a link on the secondary disc", () => {
+    render(<AccountMenu firstName="Ann" signOutAction={vi.fn()} />);
+    expect(screen.getByText("A")).toHaveClass("bg-secondary", "text-link");
+  });
+
+  it("is closed again when a hidden route is shown", async () => {
+    const page = (mode: "visible" | "hidden") => (
+      <Activity mode={mode}>
+        <AccountMenu firstName="Ann" signOutAction={vi.fn()} />
+      </Activity>
+    );
+    const { rerender } = render(page("visible"));
+    open();
+    await screen.findByRole("dialog");
+    rerender(page("hidden"));
+    rerender(page("visible"));
+    await vi.waitFor(() => {
+      expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+    });
+    expect(
+      screen.getByRole("button", { name: "Account menu" }),
+    ).toHaveAttribute("aria-expanded", "false");
   });
 });

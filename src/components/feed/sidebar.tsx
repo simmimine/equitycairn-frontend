@@ -1,5 +1,6 @@
 "use client";
 
+import { cn } from "cn";
 import { Bookmark, Newspaper } from "lucide-react";
 import Link from "next/link";
 
@@ -7,6 +8,7 @@ import type { Company } from "@/lib/feed/types";
 
 import { UserInitial } from "./account-menu";
 import { useComingSoon } from "./coming-soon";
+import { FOCUS_RING } from "./styles";
 
 const NAV_ITEM =
   "flex h-[42px] shrink-0 items-center gap-3 rounded-[10px] px-3 text-left text-sm font-medium outline-none focus-visible:ring-3 focus-visible:ring-ring/50";
@@ -20,7 +22,10 @@ export function Sidebar({
 }) {
   const comingSoon = useComingSoon();
   return (
-    <div className="sticky hidden w-[220px] shrink-0 flex-col gap-6 self-start overflow-y-auto border-r px-4 py-5 md:top-[76px] md:flex md:h-[calc(100dvh-76px)] lg:w-[260px]">
+    <aside
+      aria-label="Sidebar"
+      className="sticky hidden w-[220px] shrink-0 flex-col gap-6 self-start overflow-y-auto border-r px-4 py-5 md:top-[76px] md:flex md:h-[calc(100dvh-76px)] lg:w-[260px]"
+    >
       <nav aria-label="Main" className="flex flex-col gap-1">
         <Link
           href="/feed"
@@ -48,17 +53,25 @@ export function Sidebar({
             type="button"
             aria-label="Manage watchlist"
             onClick={() => comingSoon("Watchlist management")}
-            className="text-xs font-semibold text-link hover:underline"
+            className={cn(
+              FOCUS_RING,
+              "-m-1 rounded-sm p-1 text-xs font-semibold text-link hover:underline",
+            )}
           >
             Manage
           </button>
         </div>
-        <ul aria-label="Your watchlist" className="min-h-0 overflow-y-auto">
+        <ul
+          aria-label="Your watchlist"
+          // Focusable so the keyboard can scroll a long watchlist.
+          tabIndex={0}
+          className={cn(FOCUS_RING, "min-h-0 overflow-y-auto rounded-[10px]")}
+        >
           {companies.map(({ ticker, name }) => (
             <li key={ticker} className="flex items-center gap-3 px-3 py-1.5">
               <span
                 aria-hidden="true"
-                className="flex size-7 shrink-0 items-center justify-center rounded-lg bg-secondary text-xs font-bold"
+                className="flex size-7 shrink-0 items-center justify-center rounded-full bg-secondary text-xs font-bold text-link"
               >
                 {ticker.charAt(0)}
               </span>
@@ -83,6 +96,6 @@ export function Sidebar({
           <p className="text-xs text-muted-foreground">Personal workspace</p>
         </div>
       </div>
-    </div>
+    </aside>
   );
 }

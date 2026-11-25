@@ -9,6 +9,8 @@ import { coverageLabel, formatPublished } from "@/lib/feed/format";
 import type { Story } from "@/lib/feed/types";
 
 import { useComingSoon } from "./coming-soon";
+import { FOCUS_RING } from "./styles";
+import { TickerChip } from "./ticker-chip";
 
 export function StoryCard({ story }: { story: Story }) {
   const headingId = useId();
@@ -23,12 +25,10 @@ export function StoryCard({ story }: { story: Story }) {
       )}
     >
       <div className="flex items-center gap-2 text-[11px] font-bold">
-        <span className="flex h-6 min-w-[52px] items-center justify-center rounded-[7px] bg-secondary px-1.5 text-secondary-foreground">
-          {story.ticker}
-        </span>
+        <TickerChip ticker={story.ticker} />
         <span className="tracking-wide text-muted-foreground">SAMPLE</span>
         {story.isNew && (
-          <span className="ml-auto rounded-full bg-primary px-2 py-0.5 text-primary-foreground">
+          <span className="ml-auto flex h-[22px] w-[42px] items-center justify-center rounded-full bg-secondary text-link">
             NEW
           </span>
         )}
@@ -37,7 +37,7 @@ export function StoryCard({ story }: { story: Story }) {
         {story.headline}
       </h2>
       <div className="flex flex-col gap-0.5 text-xs text-muted-foreground md:flex-row md:gap-3">
-        <span>{story.publisher}</span>
+        <span className="min-w-0 break-words">{story.publisher}</span>
         <time dateTime={story.publishedAt}>
           {formatPublished(story.publishedAt)}
         </time>
@@ -46,7 +46,8 @@ export function StoryCard({ story }: { story: Story }) {
         href={story.originalUrl}
         target="_blank"
         rel="noopener noreferrer"
-        className={cn(TEXT_LINK, "text-xs")}
+        aria-describedby={headingId}
+        className={cn(TEXT_LINK, FOCUS_RING, "-my-1 rounded-sm py-1 text-xs")}
       >
         Original story <span aria-hidden="true">↗</span>
         <span className="sr-only"> (opens in a new tab)</span>
@@ -57,6 +58,7 @@ export function StoryCard({ story }: { story: Story }) {
         <Button
           variant="ghost"
           size="sm"
+          aria-describedby={headingId}
           className="hidden text-xs font-semibold text-link md:inline-flex"
           onClick={() => comingSoon("Coverage view")}
         >

@@ -4,7 +4,7 @@ import {
   createContext,
   useCallback,
   useContext,
-  useEffect,
+  useLayoutEffect,
   useRef,
   useState,
 } from "react";
@@ -37,22 +37,41 @@ export function ComingSoonProvider({
   );
   const timer = useRef<ReturnType<typeof setTimeout>>(undefined);
   const calls = useRef(0);
+  // The notice stays while the pointer is over it or focus is inside it.
+  const held = useRef({ hover: false, focus: false });
 
   const dismiss = useCallback(() => {
     clearTimeout(timer.current);
+    // A removed element sends no leave or blur event.
+    held.current = { hover: false, focus: false };
     setNotice(null);
   }, []);
 
-  const comingSoon = useCallback(
-    (feature: string) => {
-      clearTimeout(timer.current);
-      timer.current = setTimeout(dismiss, HIDE_AFTER_MS);
-      setNotice({ feature, id: ++calls.current });
+  const restartTimer = useCallback(() => {
+    clearTimeout(timer.current);
+    if (held.current.hover || held.current.focus) return;
+    timer.current = setTimeout(dismiss, HIDE_AFTER_MS);
+  }, [dismiss]);
+
+  const hold = useCallback(
+    (by: "hover" | "focus", on: boolean) => {
+      held.current[by] = on;
+      restartTimer();
     },
-    [dismiss],
+    [restartTimer],
   );
 
-  useEffect(() => () => clearTimeout(timer.current), []);
+  const comingSoon = useCallback(
+    (feature: string) => {
+      restartTimer();
+      setNotice({ feature, id: ++calls.current });
+    },
+    [restartTimer],
+  );
+
+  // Runs on unmount and when Activity hides the route, which keeps state:
+  // without clearing both, the notice would come back and never hide.
+  useLayoutEffect(() => dismiss, [dismiss]);
 
   return (
     <ComingSoonContext value={comingSoon}>
@@ -63,10 +82,13 @@ export function ComingSoonProvider({
       >
         {notice && (
           <div
-            key={notice.id}
+            onPointerEnter={() => hold("hover", true)}
+            onPointerLeave={() => hold("hover", false)}
+            onFocus={() => hold("focus", true)}
+            onBlur={() => hold("focus", false)}
             className="pointer-events-auto flex items-center gap-3 rounded-[14px] border bg-popover py-2 pr-2 pl-4 text-sm text-popover-foreground shadow-lg"
           >
-            <p>{notice.feature} is coming soon.</p>
+            <p key={notice.id}>{notice.feature} is coming soon.</p>
             <Button variant="ghost" onClick={dismiss}>
               Dismiss
             </Button>

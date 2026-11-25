@@ -74,4 +74,34 @@ describe("Sidebar", () => {
     expect(screen.getByText("Your account")).toBeInTheDocument();
     expect(screen.getByText("Personal workspace")).toBeInTheDocument();
   });
+
+  it("is a named complementary landmark", () => {
+    renderSidebar();
+    const aside = screen.getByRole("complementary", { name: "Sidebar" });
+    expect(aside).toContainElement(screen.getByRole("navigation"));
+    expect(aside).toContainElement(watchlist());
+  });
+
+  it("lets the keyboard reach the scrolling watchlist", () => {
+    renderSidebar();
+    expect(watchlist()).toHaveAttribute("tabindex", "0");
+    expect(watchlist()).toHaveClass("focus-visible:ring-3");
+  });
+
+  it("draws round link-coloured markers and avatar", () => {
+    renderSidebar([{ ticker: "KO", name: null }]);
+    expect(screen.getByText("K")).toHaveClass(
+      "size-7",
+      "rounded-full",
+      "text-link",
+    );
+    expect(screen.getByText("A")).toHaveClass("bg-secondary", "text-link");
+  });
+
+  it("gives Manage a focus ring and a 24px target", () => {
+    renderSidebar();
+    expect(
+      screen.getByRole("button", { name: "Manage watchlist" }),
+    ).toHaveClass("focus-visible:ring-3", "p-1", "-m-1");
+  });
 });

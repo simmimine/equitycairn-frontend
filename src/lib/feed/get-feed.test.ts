@@ -6,7 +6,12 @@ import { NO_FILTERS, type TimeRange } from "./types";
 
 const NOW = new Date("2026-11-24T10:00:00.000Z");
 const THREE = ["AAPL", "NVDA", "MSFT"];
-const many = Array.from({ length: 50 }, (_, i) => `T${i}`);
+// 50 made-up tickers, letters only like real ones: TAA, TAB, ...
+const letter = (n: number) => String.fromCharCode(65 + n);
+const many = Array.from(
+  { length: 50 },
+  (_, i) => `T${letter(Math.floor(i / 26))}${letter(i % 26)}`,
+);
 
 describe("getFeed", () => {
   it("lists the followed companies in order", async () => {
@@ -81,6 +86,18 @@ describe("getFeed", () => {
       }
     },
   );
+
+  it("keeps all of a 50-ticker watchlist in the past 24 hours", async () => {
+    expect(many.every((ticker) => /^[A-Z]+$/.test(ticker))).toBe(true);
+    const { stories, companies, generatedAt } = await getFeed(many, NOW);
+    const recent = filterStories(
+      stories,
+      companies,
+      { ...NO_FILTERS, time: "24h" },
+      generatedAt,
+    );
+    expect(new Set(recent.map((s) => s.ticker))).toEqual(new Set(many));
+  });
 
   it("leaves unknown tickers unnamed", async () => {
     const { companies } = await getFeed(["ZZZZ", "BRK.B"], NOW);

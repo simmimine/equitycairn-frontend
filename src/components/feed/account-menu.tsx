@@ -3,6 +3,7 @@
 import { Popover } from "@base-ui/react/popover";
 import { cn } from "cn";
 import { User } from "lucide-react";
+import { useLayoutEffect, useState } from "react";
 
 import { Button } from "@/components/ui/button";
 
@@ -19,7 +20,7 @@ export function UserInitial({
     <span
       aria-hidden="true"
       className={cn(
-        "flex size-[30px] shrink-0 items-center justify-center rounded-full bg-secondary text-[13px] font-bold text-secondary-foreground md:size-[34px]",
+        "flex size-[30px] shrink-0 items-center justify-center rounded-full bg-secondary text-[13px] font-bold text-link md:size-[34px]",
         className,
       )}
     >
@@ -35,8 +36,12 @@ export function AccountMenu({
   firstName: string | null;
   signOutAction: () => void | Promise<void>;
 }) {
+  const [open, setOpen] = useState(false);
+  // A hidden route keeps its state (Activity): do not come back with this open.
+  useLayoutEffect(() => () => setOpen(false), []);
+
   return (
-    <Popover.Root>
+    <Popover.Root open={open} onOpenChange={setOpen}>
       <Popover.Trigger
         aria-label="Account menu"
         className="shrink-0 rounded-full outline-none focus-visible:ring-3 focus-visible:ring-ring/50"

@@ -111,4 +111,23 @@ describe("FeedFilterBar", () => {
     const { group } = setup(NO_FILTERS, many);
     expect(within(group).getAllByRole("button")).toHaveLength(51);
   });
+
+  it("mutes unselected pills and gives them the input border", () => {
+    const { pill } = setup(busy);
+    expect(pill("All")).toHaveClass("border-input", "text-muted-foreground");
+    expect(pill("AAPL")).toHaveClass("border-primary", "bg-primary");
+    expect(pill("AAPL")).not.toHaveClass("text-muted-foreground");
+  });
+
+  it.each(["Time range", "Source"])(
+    "keeps the %s select at 16px on phones, muted",
+    (name) => {
+      const { select } = setup();
+      expect(select(name)).toHaveClass(
+        "text-base",
+        "md:text-xs",
+        "text-muted-foreground",
+      );
+    },
+  );
 });

@@ -55,4 +55,16 @@ describe("ContextPanel", () => {
     render(<ContextPanel companies={many} />);
     expect(screen.getAllByRole("listitem")).toHaveLength(50);
   });
+
+  it("sets the heading in 16px bold", () => {
+    render(<ContextPanel companies={companies} />);
+    expect(screen.getByRole("heading")).toHaveClass("text-base", "font-bold");
+  });
+
+  it("gives the manage button a focus ring and a 24px target", () => {
+    render(<ContextPanel companies={companies} />);
+    expect(
+      screen.getByRole("button", { name: /manage watchlist/i }),
+    ).toHaveClass("focus-visible:ring-3", "py-1", "-my-1");
+  });
 });

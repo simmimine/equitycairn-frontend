@@ -5,12 +5,6 @@ import type { Story } from "./types";
 // Spelled out rather than taken from Intl: server and browser must render the same text.
 const MONTHS = "Jan Feb Mar Apr May Jun Jul Aug Sep Oct Nov Dec".split(" ");
 
-const SHORT_NAMES: Record<string, string> = {
-  AAPL: "Apple Inc.",
-  MSFT: "Microsoft",
-  NVDA: "NVIDIA",
-};
-
 export function formatPublished(iso: string): string {
   const date = new Date(iso);
   const time = date.toISOString().slice(11, 16);
@@ -25,9 +19,5 @@ export function coverageLabel(story: Story): string {
 
 export function companyName(ticker: string): string | null {
   const company = POPULAR_COMPANIES.find((c) => c.ticker === ticker);
-  if (!company) return null;
-  return (
-    SHORT_NAMES[ticker] ??
-    company.name.replace(/ (Corporation|Incorporated)$/, "")
-  );
+  return company?.name.replace(/ (Corporation|Incorporated)$/, "") ?? null;
 }
