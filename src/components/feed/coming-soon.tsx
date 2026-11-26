@@ -29,8 +29,11 @@ export function useComingSoon() {
 
 export function ComingSoonProvider({
   children,
+  fallbackRef,
 }: {
   children: React.ReactNode;
+  /** Takes focus when the control that opened a notice no longer can. */
+  fallbackRef?: React.RefObject<HTMLElement | null>;
 }) {
   // The id re-inserts the text on a repeat call, so it is announced again.
   const [notice, setNotice] = useState<{ feature: string; id: number } | null>(
@@ -52,24 +55,31 @@ export function ComingSoonProvider({
     setNotice(null);
   }, []);
 
-  /** Dismisses, first returning focus from inside the notice to its opener. */
-  const hide = useCallback(() => {
-    const target = opener.current;
-    if (
-      box.current?.contains(document.activeElement) &&
-      target instanceof HTMLElement &&
-      target.isConnected
-    ) {
-      // Before dismissing: the blur this sends would restart the timer.
-      target.focus();
-    }
-    dismiss();
-  }, [dismiss]);
+  /**
+   * Dismisses, first returning focus from inside the notice to its opener, or
+   * to the fallback if the opener has since been removed or hidden. A pointer
+   * click leaves the page where it is; the keyboard scrolls to the focus.
+   */
+  const hide = useCallback(
+    (preventScroll = false) => {
+      const target = opener.current;
+      if (box.current?.contains(document.activeElement)) {
+        // Before dismissing: the blur this sends would restart the timer.
+        if (target instanceof HTMLElement) target.focus({ preventScroll });
+        // A removed or display:none element does not take focus.
+        if (document.activeElement !== target) {
+          fallbackRef?.current?.focus({ preventScroll });
+        }
+      }
+      dismiss();
+    },
+    [dismiss, fallbackRef],
+  );
 
   const restartTimer = useCallback(() => {
     clearTimeout(timer.current);
     if (held.current.hover || held.current.focus) return;
-    timer.current = setTimeout(hide, HIDE_AFTER_MS);
+    timer.current = setTimeout(() => hide(), HIDE_AFTER_MS);
   }, [hide]);
 
   const hold = useCallback(
@@ -126,7 +136,11 @@ export function ComingSoonProvider({
             className="pointer-events-auto flex items-center gap-3 rounded-[14px] border bg-popover py-2 pr-2 pl-4 text-sm text-popover-foreground shadow-lg"
           >
             <p key={notice.id}>{notice.feature} is coming soon.</p>
-            <Button variant="ghost" onClick={hide}>
+            <Button
+              variant="ghost"
+              // A click from the keyboard has no click count.
+              onClick={(event) => hide(event.detail > 0)}
+            >
               Dismiss
             </Button>
           </div>

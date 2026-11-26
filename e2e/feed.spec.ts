@@ -340,6 +340,38 @@ test.describe("feed page", () => {
     await expect(control).toBeFocused();
   });
 
+  test("Dismiss focuses the heading when the control was filtered away", async ({
+    page,
+  }) => {
+    test.skip(isMobile(page), "phones have no View coverage");
+    // The first story is AAPL's, so choosing NVDA removes it.
+    await stories(page)
+      .first()
+      .getByRole("button", { name: "View coverage" })
+      .press("Enter");
+    await page
+      .getByRole("group", { name: "Filter by company" })
+      .getByRole("button", { name: "NVDA" })
+      .click();
+    await notice(page).getByRole("button", { name: "Dismiss" }).press("Enter");
+    await expect(notice(page)).toHaveCount(0);
+    await expect(page.getByRole("heading", { level: 1 })).toBeFocused();
+  });
+
+  test("Escape focuses the heading when the control is now hidden", async ({
+    page,
+  }) => {
+    test.skip(isMobile(page), "phones have no Help");
+    await openNotice(page);
+    const dismiss = notice(page).getByRole("button", { name: "Dismiss" });
+    await dismiss.focus();
+    await page.setViewportSize({ width: 390, height: 844 });
+    await expect(page.getByRole("button", { name: "Help" })).toBeHidden();
+    await page.keyboard.press("Escape");
+    await expect(notice(page)).toHaveCount(0);
+    await expect(page.getByRole("heading", { level: 1 })).toBeFocused();
+  });
+
   test("Escape closes a notice before it clears the search", async ({
     page,
   }) => {

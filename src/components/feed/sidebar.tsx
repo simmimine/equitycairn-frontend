@@ -10,6 +10,7 @@ import type { Company } from "@/lib/feed/types";
 import { UserInitial } from "./account-menu";
 import { useComingSoon } from "./coming-soon";
 import { FOCUS_RING } from "./styles";
+import { useHeightVariable } from "./use-height-variable";
 
 const NAV_ITEM =
   "flex h-[2.625rem] shrink-0 items-center gap-3 rounded-[10px] px-3 text-left text-sm font-medium outline-none focus-visible:ring-3 focus-visible:ring-ring/50";
@@ -24,6 +25,8 @@ export function Sidebar({
   const comingSoon = useComingSoon();
   const aside = useRef<HTMLElement>(null);
   const scrolls = useScrolls(aside);
+  const profile = useRef<HTMLDivElement>(null);
+  useHeightVariable(profile, "--feed-profile-height");
   return (
     <aside
       ref={aside}
@@ -34,7 +37,7 @@ export function Sidebar({
       className={cn(
         FOCUS_RING,
         // Below the header: 4.6875rem plus its 1px border (see AppHeader).
-        "sticky hidden w-[13.75rem] shrink-0 flex-col gap-[26px] self-start overflow-y-auto border-r bg-card px-3 pt-[22px] focus-visible:ring-inset md:top-[calc(4.6875rem+1px)] md:flex md:h-[calc(100dvh-4.6875rem-1px)] lg:w-[16.25rem] lg:px-4",
+        "sticky hidden w-[13.75rem] shrink-0 flex-col gap-[26px] self-start overflow-y-auto border-r scroll-pb-(--feed-profile-height) bg-card px-3 pt-[22px] focus-visible:ring-inset md:top-[calc(4.6875rem+1px)] md:flex md:h-[calc(100dvh-4.6875rem-1px)] lg:w-[16.25rem] lg:px-4",
       )}
     >
       <nav aria-label="Main" className="flex flex-col gap-2.5">
@@ -93,8 +96,12 @@ export function Sidebar({
           ))}
         </ul>
       </div>
-      {/* Stays in view while a long watchlist scrolls under it. */}
-      <div className="sticky bottom-0 flex items-center gap-3 bg-card px-3 pt-4 pb-5">
+      {/* Stays in view while a long watchlist scrolls under it; the scroll
+          padding above keeps focused controls from ending up underneath. */}
+      <div
+        ref={profile}
+        className="sticky bottom-0 flex items-center gap-3 bg-card px-3 pt-4 pb-5"
+      >
         <UserInitial firstName={firstName} />
         <div className="flex min-w-0 flex-col">
           <p className="truncate text-sm font-semibold">

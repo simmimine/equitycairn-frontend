@@ -351,6 +351,42 @@ for (const [width, height] of [
   }
 }
 
+// Short windows with a large default font: the profile takes much of the
+// sidebar, and a focused control must not end up under it.
+for (const [fontSize, width, height] of [
+  [24, 1600, 300],
+  [32, 2560, 400],
+]) {
+  test(`the sidebar profile never covers a focused control at ${width}x${height} with a ${fontSize}px font`, async ({
+    page,
+  }) => {
+    await setDefaultFontSize(page, fontSize);
+    await open(page, width, WATCHLISTS["3 tickers"], height);
+    const sidebar = page.getByRole("complementary", { name: "Sidebar" });
+    const profile = sidebar
+      .getByText("Personal workspace")
+      .locator("xpath=../..");
+    await page.locator("body").focus();
+    for (const control of [
+      sidebar.getByRole("link", { name: "News feed" }),
+      sidebar.getByRole("button", { name: "Saved stories" }),
+      sidebar.getByRole("button", { name: "Manage watchlist" }),
+    ]) {
+      // Tab, as a keyboard reader does: the browser does the scrolling.
+      for (let step = 0; step < 10; step++) {
+        await page.keyboard.press("Tab");
+        if (await control.evaluate((el) => el === document.activeElement))
+          break;
+      }
+      await expect(control).toBeFocused();
+      const focused = await box(control);
+      const p = await box(profile);
+      expect(focused.y + focused.height).toBeLessThanOrEqual(p.y + 1);
+      expect(focused.y).toBeGreaterThanOrEqual((await box(sidebar)).y - 1);
+    }
+  });
+}
+
 test("a landscape phone keeps the phone layout usable", async ({ page }) => {
   await open(page, 844, WATCHLISTS["3 tickers"], 390);
   await expectNoSidewaysScroll(page);

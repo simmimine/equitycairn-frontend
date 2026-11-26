@@ -70,7 +70,7 @@ export function FeedApp({
   }
 
   return (
-    <ComingSoonProvider>
+    <ComingSoonProvider fallbackRef={heading}>
       <AppHeader
         query={filters.query}
         onQueryChange={(query) => setFilters({ ...filters, query })}

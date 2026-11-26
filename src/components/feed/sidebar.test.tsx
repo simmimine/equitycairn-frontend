@@ -1,5 +1,5 @@
 import { fireEvent, render, screen, within } from "@testing-library/react";
-import { beforeEach, describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import type { Company } from "@/lib/feed/types";
 import { stubMatchMedia, stubResizeObserver } from "@/test-utils/dom-stubs";
@@ -130,12 +130,31 @@ describe("Sidebar", () => {
     it("watches the sidebar and each of its parts for size changes", () => {
       const observer = stubResizeObserver();
       const { unmount } = renderSidebar();
+      // The profile's own height first, for the scroll padding.
       expect(observer.observed()).toEqual([
+        sidebar().lastElementChild,
         sidebar(),
         ...Array.from(sidebar().children),
       ]);
       unmount();
       expect(observer.observed()).toEqual([]);
+    });
+
+    it("pads its scrolling by the profile's measured height", () => {
+      const observer = stubResizeObserver();
+      const height = vi
+        .spyOn(HTMLElement.prototype, "getBoundingClientRect")
+        .mockReturnValue({ height: 90 } as DOMRect);
+      const root = document.documentElement.style;
+      const { unmount } = renderSidebar();
+      expect(sidebar()).toHaveClass("scroll-pb-(--feed-profile-height)");
+      expect(root.getPropertyValue("--feed-profile-height")).toBe("90px");
+      height.mockReturnValue({ height: 150 } as DOMRect);
+      observer.resize();
+      expect(root.getPropertyValue("--feed-profile-height")).toBe("150px");
+      unmount();
+      expect(root.getPropertyValue("--feed-profile-height")).toBe("");
+      height.mockRestore();
     });
 
     it("keeps the profile at the bottom, over the rows scrolling under it", () => {

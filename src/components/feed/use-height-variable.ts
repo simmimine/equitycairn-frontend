@@ -2,7 +2,7 @@ import { useLayoutEffect } from "react";
 
 /**
  * Keeps a CSS variable on <html> at the element's height (0 while not
- * displayed), for the page's scroll padding in globals.css. Measured rather
+ * displayed), for scroll padding (globals.css, Sidebar). Measured rather
  * than assumed, so a larger font or a wrapped row is counted too.
  */
 export function useHeightVariable(

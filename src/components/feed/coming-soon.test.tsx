@@ -1,5 +1,5 @@
 import { act, fireEvent, render, screen } from "@testing-library/react";
-import { Activity } from "react";
+import { Activity, useRef } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { ComingSoonProvider, useComingSoon } from "./coming-soon";
@@ -218,7 +218,78 @@ describe("ComingSoonProvider", () => {
     expect(trigger("Profile")).toHaveFocus();
   });
 
-  it("leaves focus in the notice's place when the control is gone", () => {
+  /** A page whose Help control can be taken away, with a heading to fall to. */
+  function Page({ withTrigger = true }) {
+    const heading = useRef<HTMLHeadingElement>(null);
+    return (
+      <ComingSoonProvider fallbackRef={heading}>
+        <h1 ref={heading} tabIndex={-1}>
+          Page
+        </h1>
+        {withTrigger && <Trigger feature="Help" />}
+      </ComingSoonProvider>
+    );
+  }
+  const pageHeading = () => screen.getByRole("heading", { name: "Page" });
+
+  it("focuses the fallback when the control is gone", () => {
+    const { rerender } = render(<Page />);
+    pressFocused("Help");
+    focus();
+    rerender(<Page withTrigger={false} />);
+    press("Dismiss");
+    expect(screen.getByRole("status")).toBeEmptyDOMElement();
+    expect(pageHeading()).toHaveFocus();
+    // The blur on the way out must not leave a hide timer behind.
+    wait(0);
+    expect(vi.getTimerCount()).toBe(0);
+  });
+
+  it("focuses the fallback when the control cannot take focus", () => {
+    render(<Page />);
+    pressFocused("Help");
+    focus();
+    // As the browser does for a display:none element; jsdom has no layout.
+    vi.spyOn(trigger("Help"), "focus").mockImplementation(() => {});
+    escape();
+    expect(screen.getByRole("status")).toBeEmptyDOMElement();
+    expect(pageHeading()).toHaveFocus();
+  });
+
+  it("leaves the fallback alone when focus was not in the notice", () => {
+    const { rerender } = render(<Page />);
+    pressFocused("Help");
+    rerender(<Page withTrigger={false} />);
+    press("Dismiss");
+    expect(document.body).toHaveFocus();
+  });
+
+  it.each([
+    ["a pointer click", 1, true],
+    ["the keyboard", 0, false],
+  ])(
+    "scrolls to the opener only for the keyboard: %s",
+    (_, detail, preventScroll) => {
+      render(<Page />);
+      pressFocused("Help");
+      focus();
+      const restore = vi.spyOn(trigger("Help"), "focus");
+      fireEvent.click(dismissButton(), { detail });
+      expect(restore).toHaveBeenCalledWith({ preventScroll });
+    },
+  );
+
+  it("does not scroll to the fallback on a pointer click", () => {
+    const { rerender } = render(<Page />);
+    pressFocused("Help");
+    focus();
+    rerender(<Page withTrigger={false} />);
+    const fallback = vi.spyOn(pageHeading(), "focus");
+    fireEvent.click(dismissButton(), { detail: 1 });
+    expect(fallback).toHaveBeenCalledWith({ preventScroll: true });
+  });
+
+  it("copes with no fallback when the control is gone", () => {
     const { rerender } = render(
       <ComingSoonProvider>
         <Trigger feature="Help" />
@@ -229,7 +300,6 @@ describe("ComingSoonProvider", () => {
     rerender(<ComingSoonProvider>{null}</ComingSoonProvider>);
     press("Dismiss");
     expect(screen.getByRole("status")).toBeEmptyDOMElement();
-    expect(document.body).toHaveFocus();
   });
 
   it("closes on Escape, handing focus back from inside it", () => {
