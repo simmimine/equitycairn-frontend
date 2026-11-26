@@ -14,6 +14,21 @@ export const EXPERIENCES = ["beginner", "intermediate", "experienced"] as const;
 export type Role = (typeof ROLES)[number];
 export type Experience = (typeof EXPERIENCES)[number];
 
+/** Value and label pairs, in the order the forms show them. */
+export const ROLE_OPTIONS = [
+  ["retail_investor", "Retail investor"],
+  ["institutional_investor", "Institutional investor"],
+  ["researcher_analyst", "Researcher / analyst"],
+  ["financial_adviser", "Financial adviser"],
+  ["other", "Other"],
+] as const satisfies readonly (readonly [Role, string])[];
+
+export const EXPERIENCE_OPTIONS = [
+  ["beginner", "Beginner"],
+  ["intermediate", "Intermediate"],
+  ["experienced", "Experienced"],
+] as const satisfies readonly (readonly [Experience, string])[];
+
 const nameSchema = z
   .string()
   .trim()
