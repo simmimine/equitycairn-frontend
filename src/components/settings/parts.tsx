@@ -61,5 +61,8 @@ export function FormStatus({ status }: { status: Status }) {
 /** Buttons are full width and taller on phones, as on the design boards. */
 export const ACTION = "h-11 w-full text-xs font-semibold md:h-9 md:w-auto";
 export const LABEL = "text-xs font-semibold";
+/** The boards' choice pills: the chosen one has a solid border and fill. */
+export const CHOICE =
+  "has-data-checked:border-primary has-data-checked:bg-secondary has-data-checked:font-bold dark:has-data-checked:border-primary dark:has-data-checked:bg-secondary";
 export const FIELD = "h-11 rounded-[10px] bg-background md:h-10";
 export const GENERIC_ERROR = "Something went wrong, please try again.";

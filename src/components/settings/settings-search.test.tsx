@@ -113,6 +113,17 @@ describe("settings search", () => {
     expect(field()).toHaveValue("zzz");
   });
 
+  it("has a close button in the phone's search row", async () => {
+    const user = show(false);
+    const toggle = screen.getByRole("button", { name: "Search" });
+    await user.click(toggle);
+    await user.type(field(), "sign");
+    await user.click(screen.getByRole("button", { name: "Close search" }));
+    expect(toggle).toHaveAttribute("aria-expanded", "false");
+    expect(toggle).toHaveFocus();
+    expect(field()).toHaveValue("");
+  });
+
   it("opens a row on a phone, by button or shortcut", async () => {
     const user = show(false);
     const toggle = screen.getByRole("button", { name: "Search" });

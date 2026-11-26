@@ -1,7 +1,7 @@
 "use client";
 
 import { cn } from "cn";
-import { Search } from "lucide-react";
+import { Search, X } from "lucide-react";
 import {
   useCallback,
   useEffect,
@@ -137,8 +137,19 @@ export function SettingsSearch() {
             onBlur={() => setFocused(false)}
             onKeyDown={onKeyDown}
             // 16px on touch screens of any width, or iOS zooms in on focus.
-            className="h-[2.625rem] rounded-[11px] bg-background pl-10 md:pr-16 md:text-base md:pointer-fine:text-sm"
+            className="h-[2.625rem] rounded-[11px] bg-background pl-10 pr-12 md:pr-16 md:text-base md:pointer-fine:text-sm"
           />
+          <button
+            type="button"
+            aria-label="Close search"
+            onClick={() => {
+              close();
+              toggle.current?.focus();
+            }}
+            className="absolute top-0 right-0 flex size-[2.625rem] items-center justify-center rounded-[11px] text-muted-foreground outline-none focus-visible:ring-3 focus-visible:ring-ring/50 md:hidden"
+          >
+            <X aria-hidden="true" className="size-4" />
+          </button>
           {query ? (
             <kbd aria-hidden="true" className={KEY}>
               Esc

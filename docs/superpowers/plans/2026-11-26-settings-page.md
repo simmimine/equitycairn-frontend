@@ -35,29 +35,31 @@
 
 ## File Structure
 
-| Path | Responsibility |
-|---|---|
-| `supabase/migrations/20261126000000_settings.sql` | tokens, bug reports, email lock, session end and account delete functions |
-| `src/lib/account/links.ts` | issue, peek, consume one-time tokens |
-| `src/lib/account/admin.ts` | set password, end sessions, delete account |
-| `src/lib/email/account-link-email.ts`, `bug-report-email.ts` | the two emails |
-| `src/lib/bugs/schema.ts`, `store.ts` | report validation and insert |
-| `src/app/actions/account-link.ts`, `settings.ts`, `bug-report.ts` | server actions |
-| `src/app/account/confirm/{page,confirm-content}.tsx` | link landing page |
-| `src/components/account/confirm-view.tsx` | password form / delete button |
-| `src/app/settings/{page,settings-content}.tsx` | route |
-| `src/components/settings/` | `settings-app`, `settings-header`, one file per section |
-| `src/app/e2e-settings/{page,harness}.tsx` | fake-action harness |
+| Path                                                              | Responsibility                                                            |
+| ----------------------------------------------------------------- | ------------------------------------------------------------------------- |
+| `supabase/migrations/20261126000000_settings.sql`                 | tokens, bug reports, email lock, session end and account delete functions |
+| `src/lib/account/links.ts`                                        | issue, peek, consume one-time tokens                                      |
+| `src/lib/account/admin.ts`                                        | set password, end sessions, delete account                                |
+| `src/lib/email/account-link-email.ts`, `bug-report-email.ts`      | the two emails                                                            |
+| `src/lib/bugs/schema.ts`, `store.ts`                              | report validation and insert                                              |
+| `src/app/actions/account-link.ts`, `settings.ts`, `bug-report.ts` | server actions                                                            |
+| `src/app/account/confirm/{page,confirm-content}.tsx`              | link landing page                                                         |
+| `src/components/account/confirm-view.tsx`                         | password form / delete button                                             |
+| `src/app/settings/{page,settings-content}.tsx`                    | route                                                                     |
+| `src/components/settings/`                                        | `settings-app`, `settings-header`, one file per section                   |
+| `src/app/e2e-settings/{page,harness}.tsx`                         | fake-action harness                                                       |
 
 ---
 
 ### Task 1: Hidden session cookie and two kinds of sign out
 
 **Files:**
+
 - Modify: `src/lib/auth/session.ts`, `src/proxy.ts`, `src/lib/auth/accounts.ts` (`signOutSession`), `src/app/actions/login.ts` (`signOut`)
 - Test: `src/lib/auth/session.test.ts`, `src/lib/auth/accounts.test.ts`, `src/app/actions/login.test.ts`, `src/proxy.test.ts` (extend or create)
 
 **Interfaces:**
+
 - Produces: `SESSION_COOKIE_OPTIONS = { httpOnly: true } as const` in `src/lib/auth/constants.ts`; `signOutSession(scope: "local" | "global"): Promise<void>`; actions `signOut(): Promise<void>` (local) and `signOutEverywhere(): Promise<void>` (global), both redirecting to `/`.
 
 - [ ] **Step 1: Failing tests**
@@ -74,6 +76,7 @@
 **Files:** Create: `supabase/migrations/20261126000000_settings.sql` (follow the style of `20261124000000_beta_login.sql`)
 
 **Interfaces (produces):**
+
 - `account_action_tokens(user_id uuid references auth.users on delete cascade, purpose text check in ('password_change','account_delete'), token_hash text not null unique, expires_at timestamptz not null, created_at timestamptz not null default now(), primary key (user_id, purpose))`
 - `bug_reports(id uuid pk default gen_random_uuid(), user_id uuid not null references auth.users on delete cascade, what_happened text not null check 1..2000, expected text check ≤2000, page_path text check ≤200, browser text check ≤500, screen text check ≤11, status text not null default 'new' check in ('new','looking','fixed'), created_at timestamptz not null default now())`
 - `end_user_sessions(p_user_id uuid) returns void` — deletes from `auth.sessions`.
@@ -87,10 +90,12 @@
 ### Task 3: Link tokens, account admin calls and the link email
 
 **Files:**
+
 - Create: `src/lib/account/links.ts`, `src/lib/account/admin.ts`, `src/lib/email/account-link-email.ts` and a `.test.ts` beside each
 - Modify: `src/lib/auth/constants.ts`
 
 **Interfaces:**
+
 - Consumes: `generateToken`, `hashToken` (`@/lib/signup/tokens`); `getSupabaseAdmin`; `sendEmail`, `getSiteUrl`, `escapeHtml` (`@/lib/email/send`).
 - Produces (all `server-only`; database errors throw):
   - `type LinkPurpose = "password_change" | "account_delete"`; `ACCOUNT_LINK_TTL_MINUTES = 30`
@@ -114,10 +119,12 @@
 ### Task 4: Link actions
 
 **Files:**
+
 - Create: `src/app/actions/account-link.ts`, `account-link.test.ts`
 - Modify: `src/lib/auth/attempts.ts` (scope union gains `"account-link" | "account-confirm" | "bug-report"`), `src/lib/auth/constants.ts`
 
 **Interfaces:**
+
 - Consumes: Task 3; `getUser`, `signOutSession`, `checkAttempts`, `getClientKey`, `validatePassword`.
 - Produces:
   - `ACCOUNT_LIMITS = { link: { max: 3, windowSeconds: 600 }, confirm: { max: 10, windowSeconds: 600 }, bug: { max: 5, windowSeconds: 3600 } }`
@@ -141,9 +148,11 @@
 ### Task 5: Confirm page
 
 **Files:**
+
 - Create: `src/app/account/confirm/page.tsx`, `confirm-content.tsx`, `confirm-content.test.tsx`, `src/components/account/confirm-view.tsx`, `confirm-view.test.tsx`
 
 **Interfaces:**
+
 - Consumes: `peekLink`, Task 4 actions; `LinkScreen` and the shell used by `src/app/auth/confirm`.
 - Produces: `ConfirmView({ purpose, token, changePassword, deleteAccount })` with the two actions as props.
 
@@ -160,6 +169,7 @@
 **Files:** Create: `src/app/actions/settings.ts`, `settings.test.ts`. Modify: `src/lib/onboarding/schema.ts`, `src/components/onboarding/onboarding-flow.tsx` (move its role and experience label lists)
 
 **Interfaces:**
+
 - Consumes: `getProfile`, `saveName`, `saveAbout`, `parseName`, `parseAbout`.
 - Produces: `ROLE_OPTIONS`, `EXPERIENCE_OPTIONS: readonly (readonly [string, string])[]` exported from `schema.ts`; `saveProfileAction(input: { firstName: string; lastName: string; role: string; experience: string }): Promise<{ ok: true } | { ok: false; error: "unauthenticated" | "invalid" | "server_error" }>`
 
@@ -172,6 +182,7 @@
 **Files:** Create: `src/lib/bugs/schema.ts`, `src/lib/bugs/store.ts`, `src/lib/email/bug-report-email.ts`, `src/app/actions/bug-report.ts`, tests beside each. Modify: `.env.example`
 
 **Interfaces:**
+
 - Produces:
   - `type BugInput = { whatHappened: string; expected: string; pagePath: string; browser: string; screen: string }`
   - `type BugReport = { whatHappened: string; expected: string | null; pagePath: string | null; browser: string | null; screen: string | null }`
@@ -194,6 +205,7 @@
 **Files:** Create: `src/app/settings/page.tsx`, `settings-content.tsx` (+test); `src/components/settings/settings-app.tsx`, `settings-header.tsx`, `profile-section.tsx`, `appearance-section.tsx`, `account-section.tsx`, `subscription-section.tsx`, `bug-section.tsx`, `privacy-section.tsx` (+tests). Modify: `src/proxy.ts` (matcher gains `"/settings/:path*"`), `src/components/feed/tab-bar.tsx`
 
 **Interfaces:**
+
 - Consumes: Tasks 1, 4, 6, 7.
 - Produces:
   - `type SettingsActions = { saveProfile: typeof saveProfileAction; requestLink: typeof requestAccountLink; reportBug: typeof reportBugAction; signOut: () => void | Promise<void>; signOutEverywhere: () => void | Promise<void> }`
@@ -221,6 +233,7 @@
 **Files:** Create: `src/lib/settings/search.ts`, `src/components/settings/settings-search.tsx` (+tests), `src/lib/search-shortcut.ts`. Modify: `src/components/feed/app-header.tsx` (move `isSearchShortcut` and the platform hint to the new module), `settings-header.tsx`
 
 **Interfaces:**
+
 - Produces: `isSearchShortcut(event: KeyboardEvent): boolean` and `useShortcutHint(): string | null` in `search-shortcut.ts`; `type SettingEntry = { id: string; title: string; section: string }`; `SETTINGS: readonly SettingEntry[]`; `searchSettings(query: string): SettingEntry[]`; `SettingsSearch()`. Each `id` is the DOM id of that setting's focusable control or section heading (`tabIndex={-1}`), set by the section components.
 
 - [ ] **Step 1: Failing tests**

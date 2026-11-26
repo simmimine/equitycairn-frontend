@@ -11,6 +11,9 @@ const ROUTES = [
   "/e2e-onboarding",
   "/e2e-auth",
   "/e2e-feed",
+  "/e2e-settings",
+  "/settings",
+  "/account/confirm",
 ];
 
 /** Warms every route the specs visit so dev-server compilation can't cause timeouts. */

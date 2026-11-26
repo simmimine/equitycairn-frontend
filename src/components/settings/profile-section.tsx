@@ -12,6 +12,7 @@ import { EXPERIENCE_OPTIONS, ROLE_OPTIONS } from "@/lib/onboarding/schema";
 
 import {
   ACTION,
+  CHOICE,
   FIELD,
   FormStatus,
   GENERIC_ERROR,
@@ -121,6 +122,8 @@ export function ProfileSection({
             onValueChange={setRole}
             options={ROLES}
             clearable={false}
+            legendClassName={LABEL}
+            cardClassName={CHOICE}
           />
         </div>
         <div
@@ -134,6 +137,8 @@ export function ProfileSection({
             onValueChange={setExperience}
             options={EXPERIENCES}
             clearable={false}
+            legendClassName={LABEL}
+            cardClassName={CHOICE}
           />
         </div>
         <FormStatus status={status} />

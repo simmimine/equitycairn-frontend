@@ -98,6 +98,17 @@ describe("profile", () => {
     expect(await screen.findByText("Changes saved.")).toBeInTheDocument();
   });
 
+  it("marks the chosen answer with a border and fill, as on the boards", () => {
+    show();
+    const card = screen
+      .getByRole("radio", { name: "Other" })
+      .closest("[data-slot=field-label]");
+    expect(card).toHaveClass(
+      "has-data-checked:border-primary",
+      "has-data-checked:bg-secondary",
+    );
+  });
+
   it("explains a rejected name", async () => {
     actions.saveProfile.mockResolvedValue({ ok: false, error: "invalid" });
     const user = show();

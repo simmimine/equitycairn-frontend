@@ -5,7 +5,7 @@ import { useSyncExternalStore } from "react";
 
 import { OptionCards } from "@/components/onboarding/option-cards";
 
-import { SettingsCard } from "./parts";
+import { CHOICE, SettingsCard } from "./parts";
 
 const THEMES = [
   ["light", "Light"],
@@ -36,6 +36,8 @@ export function AppearanceSection() {
           onValueChange={setTheme}
           options={THEMES}
           clearable={false}
+          legendClassName="text-[0.6875rem] font-normal text-muted-foreground"
+          cardClassName={CHOICE}
         />
       </div>
     </SettingsCard>

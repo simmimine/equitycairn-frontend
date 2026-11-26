@@ -21,6 +21,8 @@ export function OptionCards({
   options,
   className,
   clearable = true,
+  legendClassName,
+  cardClassName,
 }: {
   legend: string;
   value: string;
@@ -29,12 +31,17 @@ export function OptionCards({
   className?: string;
   /** False where one of the options already means "no answer". */
   clearable?: boolean;
+  legendClassName?: string;
+  cardClassName?: string;
 }) {
   const legendId = useId();
   return (
     <div className="flex flex-col gap-3">
       <div className="flex items-center justify-between gap-3">
-        <p id={legendId} className="text-sm font-semibold">
+        <p
+          id={legendId}
+          className={cn("text-sm font-semibold", legendClassName)}
+        >
           {legend}
         </p>
         {clearable && value && (
@@ -56,7 +63,7 @@ export function OptionCards({
         className={cn("flex flex-wrap gap-3", className)}
       >
         {options.map(([v, label]) => (
-          <FieldLabel key={v} className="!w-auto">
+          <FieldLabel key={v} className={cn("!w-auto", cardClassName)}>
             <Field orientation="horizontal" className="!w-auto rounded-xl px-4">
               <FieldContent>
                 <FieldTitle className="text-sm font-medium">{label}</FieldTitle>

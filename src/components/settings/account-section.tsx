@@ -137,10 +137,10 @@ export function AccountSection({
         <Button
           id="setting-delete"
           type="button"
-          variant="destructive"
+          variant="outline"
           disabled={pending}
           onClick={() => ask("account_delete")}
-          className={ACTION}
+          className={`${ACTION} border-destructive text-destructive hover:text-destructive dark:border-destructive`}
         >
           Delete account
         </Button>
