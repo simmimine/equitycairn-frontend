@@ -201,6 +201,33 @@ test.describe("about step", () => {
 });
 
 test.describe("watchlist step", () => {
+  test("a full watchlist scrolls inside its card without covering the text", async ({
+    page,
+    isMobile,
+  }) => {
+    test.skip(isMobile, "the watchlist panel is desktop-only");
+    await open(
+      page,
+      "?step=watchlist&tickers=AAPL,MSFT,NVDA,AMZN,GOOGL,META,TSLA,JPM,V,ZZZZ",
+    );
+    const list = page.locator("[data-slot=scroll-area-viewport]", {
+      has: page.getByRole("button", { name: "Remove ZZZZ" }),
+    });
+    const box = (await list.boundingBox())!;
+    const text = (await page.getByText("A focused start").boundingBox())!;
+    expect(box.height).toBeLessThanOrEqual(256);
+    expect(box.y + box.height).toBeLessThanOrEqual(text.y);
+    expect(await list.evaluate((el) => el.scrollHeight > el.clientHeight)).toBe(
+      true,
+    );
+
+    // The last company can still be scrolled to and removed.
+    await page.getByRole("button", { name: "Remove ZZZZ" }).click();
+    await expect(page.getByRole("button", { name: "Remove ZZZZ" })).toHaveCount(
+      0,
+    );
+  });
+
   test("selecting updates the count and the watchlist panel", async ({
     page,
     isMobile,

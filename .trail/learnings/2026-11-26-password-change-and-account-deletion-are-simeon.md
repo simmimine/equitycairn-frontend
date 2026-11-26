@@ -3,7 +3,7 @@ title: Password change and account deletion are confirmed by our own one-time em
 author: Simeon
 date: 2026-11-26
 branch: docs/settings-page-brainstorm
-cost: { minutes: 42, tokens: 375940 }
+cost: { minutes: 50, tokens: 417380 }
 id: l-2f89ae62
 scope: repo
 status: active
@@ -28,6 +28,8 @@ Deleting an account removes the beta sign-up record and the auth user in one dat
 Settings search was added by the owner after the design was approved, and uses the same Ctrl+K / ⌘K as the feed search, because both sit in the header (not built yet).
 "Sign out of all devices" redirects only when Supabase confirms it, because `signOut` returns an error instead of throwing and the first version sent the user home as if it had worked. A password change ends sessions before and after the update, because a database failure would otherwise leave a new password with old sessions still live.
 The settings migration was applied to the live Supabase project at the owner's request (name `settings`), so change the schema with a new migration, because editing the applied file would not reach the database. When Supabase answers `weak_password` or `same_password`, the used link is re-inserted with its old expiry, because the user could otherwise never retry.
+The account confirm page calls `connection()` before looking its link up, because `new Date()` during rendering fails with "encountered the unstable value `new Date()` while prerendering".
+The watchlist card puts its height limit on the scroll viewport as well as the root, because the viewport's full height resolves to auto under a max-height parent and the list spilled over the text below (529px against a 256px limit).
 
 ## Tried and ruled out
 - Supabase's recovery link for passwords with our own link for deletion: rejected because it means two systems, and using the recovery link signs in whoever holds it.
@@ -38,6 +40,8 @@ The settings migration was applied to the live Supabase project at the owner's r
 - Creating three full boards in one Penpot script: it failed with a 120 second timeout and left nothing behind, because one large board alone takes about 17 seconds.
 - Ignoring the result of `signOut` for the global scope: rejected because a lost device would stay signed in unnoticed.
 - Re-inserting with an upsert: rejected because it would overwrite a newer link the user had requested.
+- Relying on tests and the build to catch it: ruled out because unit tests mocked the lookup, browser tests used a harness and `pnpm build` passed, so only the real page in `next dev` showed it.
+- A unit test alone: ruled out because jsdom lays nothing out, so only a browser measurement showed the overlap.
 
 ## Watch out
 - Supabase `signOut()` defaults to global scope, because of which the current Sign out ends every session.
@@ -63,3 +67,10 @@ In the code: `signOutEverywhere` in src/app/actions/login.ts, `setPassword` in s
 - When the owner's dev server holds `.next/dev`, `pnpm test:e2e` cannot start its own; build and serve on port 3100 with the E2E_FAKE variables, then stop it by port, because killing the background shell job leaves the server running.
 
 In the code: supabase/migrations/20261126000000_settings.sql, `restoreLink` in src/lib/account/links.ts.
+- After touching a server-rendered route, load the real route in `next dev` and read `.next/dev/logs/next-development.log`, because nothing else reports this.
+
+In the code: `ConfirmContent` in src/app/account/confirm/confirm-content.tsx, `peekLink` in src/lib/account/links.ts.
+- Other uses of the shared `ScrollArea` with only a maximum height will have the same problem, because the shared component was left unchanged.
+- A server action that clears the session cookie redraws the page, so a page built from a one-time link must keep its first state or the success screen is replaced.
+
+In the code: src/components/onboarding/watchlist-panel.tsx, e2e/onboarding.spec.ts, `ConfirmView` in src/components/account/confirm-view.tsx.

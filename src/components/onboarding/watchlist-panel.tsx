@@ -45,8 +45,11 @@ export function WatchlistPanel({
             No companies yet. Pick a few on the left.
           </p>
         ) : (
-          <ScrollArea className="max-h-64">
-            <ul>
+          // The limit goes on the viewport: its full height would resolve to
+          // "auto" under a max-height parent, and spill over the text below.
+          <ScrollArea className="max-h-64 [&>[data-slot=scroll-area-viewport]]:max-h-64">
+            {/* Room for the scrollbar beside the remove buttons. */}
+            <ul className="pr-3">
               {selected.map((ticker, i) => (
                 <li key={ticker}>
                   {i > 0 && <Separator />}
