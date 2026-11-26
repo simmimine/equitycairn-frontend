@@ -1,4 +1,4 @@
-import { expect, type Page } from "@playwright/test";
+import { expect, type Locator, type Page } from "@playwright/test";
 
 /** Brand tokens as the browser reports them. */
 export const COLOR = {
@@ -44,4 +44,37 @@ declare global {
   interface Window {
     __authCalls?: { action: string; args: unknown[] }[];
   }
+}
+
+/**
+ * Waits for `ready` on a test-only page, or fails at once with a clear message
+ * if the server is not serving it. Those pages call notFound() unless their
+ * E2E_FAKE_* variable is set, and from inside Suspense that streams Next's
+ * not-found page with status 200, so the status alone cannot tell.
+ */
+export async function expectTestPage(
+  page: Page,
+  ready: Locator,
+  route: string,
+  variable: string,
+) {
+  const notFound = page.getByText("This page could not be found.");
+  await expect(ready.or(notFound).first()).toBeAttached();
+  if (await notFound.isVisible()) {
+    throw new Error(
+      `${route} is 404: the server was started without ${variable}=1. ` +
+        "Stop any running dev server so Playwright can start its own, or start yours with that variable.",
+    );
+  }
+}
+
+/**
+ * Sets the browser's default font size (Chromium only), as a reader who
+ * enlarged it in the settings has. Applies to pages loaded afterwards.
+ */
+export async function setDefaultFontSize(page: Page, px: number) {
+  const cdp = await page.context().newCDPSession(page);
+  await cdp.send("Page.setFontSizes", {
+    fontSizes: { standard: px, fixed: Math.round((px * 13) / 16) },
+  });
 }

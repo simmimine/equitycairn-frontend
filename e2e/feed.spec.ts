@@ -1,0 +1,727 @@
+import { expect, test, type Page } from "@playwright/test";
+
+import {
+  COLOR,
+  calls,
+  expectNoSidewaysScroll,
+  expectTestPage,
+  isMobile,
+  setDefaultFontSize,
+} from "./helpers";
+
+// Drives the real FeedApp on mocked stories with a fake sign out (see
+// src/app/e2e-feed). Runs in the desktop and mobile projects.
+
+const DEFAULT = ["AAPL", "NVDA", "MSFT"];
+const FIFTY = Array.from({ length: 50 }, (_, i) => `T${i}`);
+/** Each default ticker has one story from the past hour and one older one. */
+const ALL_STORIES = 6;
+
+/** Console errors and React warnings, so a test can assert there were none. */
+function watchConsole(page: Page) {
+  const problems: string[] = [];
+  page.on("pageerror", (error) => problems.push(`pageerror: ${error}`));
+  page.on("console", (message) => {
+    const text = message.text();
+    if (message.type() === "error" || /hydrat/i.test(text)) {
+      problems.push(`${message.type()}: ${text}`);
+    }
+  });
+  return problems;
+}
+
+async function open(page: Page, query = "") {
+  await page.goto(`/e2e-feed${query}`);
+  await expectTestPage(
+    page,
+    page.locator("body[data-hydrated=true]"),
+    "/e2e-feed",
+    "E2E_FAKE_FEED",
+  );
+  // A late font swap would move things after a test has measured them.
+  await page.evaluate(() => document.fonts.ready);
+}
+
+const stories = (page: Page) =>
+  page.getByRole("list", { name: "Stories" }).getByRole("article");
+
+const searchBox = (page: Page) =>
+  page.getByRole("searchbox", {
+    name: "Search companies, tickers, or stories",
+  });
+
+async function search(page: Page, text: string) {
+  await (
+    isMobile(page)
+      ? page.getByRole("button", { name: "Search" })
+      : searchBox(page)
+  ).click();
+  await expect(searchBox(page)).toBeFocused();
+  await searchBox(page).fill(text);
+}
+
+const notice = (page: Page) =>
+  page.getByRole("status").filter({ hasText: "is coming soon." });
+
+test.describe("feed page", () => {
+  let problems: string[];
+
+  test.beforeEach(async ({ page }) => {
+    problems = watchConsole(page);
+    await open(page);
+  });
+
+  test.afterEach(() => {
+    expect(problems).toEqual([]);
+  });
+
+  test("shows the boards' content", async ({ page }) => {
+    await expect(
+      page.getByRole("heading", { level: 1, name: "News for your watchlist" }),
+    ).toBeVisible();
+    await expect(
+      page.getByText(
+        isMobile(page)
+          ? "Coverage around your followed companies."
+          : "Company coverage, grouped and ordered by publication time.",
+      ),
+    ).toBeVisible();
+    await expect(
+      page.getByRole("link", { name: "equitycairn" }),
+    ).toHaveAttribute("href", "/feed");
+
+    const pills = page.getByRole("group", { name: "Filter by company" });
+    await expect(pills.getByRole("button")).toHaveText(["All", ...DEFAULT]);
+    await expect(pills.getByRole("button", { name: "All" })).toHaveAttribute(
+      "aria-pressed",
+      "true",
+    );
+
+    await expect(stories(page)).toHaveCount(ALL_STORIES);
+    const [first, second, third] = await stories(page).all();
+    await expect(first).toContainText("AAPL");
+    await expect(first).toContainText(
+      "Example coverage: company updates its services lineup",
+    );
+    await expect(first).toContainText("Example Publisher");
+    await expect(first).toContainText("25 Nov · 11:42 UTC");
+    await expect(first).toContainText("3 sample links grouped");
+    await expect(first).toContainText("NEW");
+    await expect(second).toContainText(
+      "Example coverage: new platform draws data-center interest",
+    );
+    await expect(second).toContainText("1 sample link");
+    await expect(third).toContainText(
+      "Example filing: quarterly report adds context to company updates",
+    );
+    await expect(third).toContainText("Filed document · original link");
+    await expect(third).not.toContainText("NEW");
+    await expect(page.getByText("6 stories shown")).toBeAttached();
+
+    const mobile = isMobile(page);
+    await expect(page.getByRole("navigation", { name: "Tabs" })).toBeVisible({
+      visible: mobile,
+    });
+    await expect(
+      page.getByRole("complementary", { name: "Sidebar" }),
+    ).toBeVisible({ visible: !mobile });
+    const panel = page.getByRole("complementary", {
+      name: "Coverage at a glance",
+    });
+    await expect(panel).toBeVisible({ visible: !mobile });
+    if (!mobile) {
+      // Not ⌘ on this platform; hydrating it raised no warning (afterEach).
+      await expect(page.getByRole("banner").locator("kbd")).toHaveText(
+        "Ctrl K",
+      );
+      await expect(page.getByText("Newest first")).toBeVisible();
+      await expect(page.getByText("Example items")).toBeVisible();
+      await expect(
+        page.getByText(
+          "Example content only · sources shown here are placeholders.",
+        ),
+      ).toBeVisible();
+      await expect(panel).toContainText("Apple Inc.");
+      await expect(panel).toContainText("NVIDIA");
+      await expect(panel).toContainText("Microsoft");
+      const watchlist = page.getByRole("list", { name: "Your watchlist" });
+      await expect(watchlist.getByRole("listitem")).toHaveCount(3);
+      await expect(
+        page.getByRole("complementary", { name: "Sidebar" }),
+      ).toContainText("Simeon");
+    }
+    await expectNoSidewaysScroll(page);
+  });
+
+  test("the ticker pills filter the stories", async ({ page }) => {
+    const pills = page.getByRole("group", { name: "Filter by company" });
+    await pills.getByRole("button", { name: "NVDA" }).click();
+    await expect(pills.getByRole("button", { name: "NVDA" })).toHaveAttribute(
+      "aria-pressed",
+      "true",
+    );
+    await expect(stories(page)).toHaveCount(2);
+    for (const story of await stories(page).all()) {
+      await expect(story).toContainText("NVDA");
+    }
+    await expect(page.getByText("2 stories shown")).toBeAttached();
+    await pills.getByRole("button", { name: "All" }).click();
+    await expect(stories(page)).toHaveCount(ALL_STORIES);
+  });
+
+  test("the time range filters the stories", async ({ page }) => {
+    const time = page.getByRole("combobox", { name: "Time range" });
+    for (const [value, count] of [
+      ["24h", 3],
+      ["7d", 4],
+      ["30d", 5],
+      ["any", ALL_STORIES],
+    ] as const) {
+      await time.selectOption(value);
+      await expect(stories(page)).toHaveCount(count);
+    }
+  });
+
+  test("the source filters the stories", async ({ page }) => {
+    const source = page.getByRole("combobox", { name: "Source" });
+    await expect(source.getByRole("option")).toHaveText([
+      "Any source",
+      "Company filing",
+      "Example Publisher",
+      "Example Wire",
+    ]);
+    await source.selectOption("Company filing");
+    await expect(stories(page)).toHaveCount(2);
+    for (const story of await stories(page).all()) {
+      await expect(story).toContainText("Company filing");
+    }
+    await source.selectOption("");
+    await expect(stories(page)).toHaveCount(ALL_STORIES);
+  });
+
+  test("search filters the stories", async ({ page }) => {
+    await search(page, "data-center");
+    await expect(stories(page)).toHaveCount(1);
+    await expect(stories(page)).toContainText("NVDA");
+    // Company names match too.
+    await searchBox(page).fill("microsoft");
+    await expect(stories(page)).toHaveCount(2);
+
+    await searchBox(page).press("Escape");
+    // Hidden on phones by then, so not found by role.
+    await expect(page.locator("input[type=search]")).toHaveValue("");
+    await expect(stories(page)).toHaveCount(ALL_STORIES);
+    if (isMobile(page)) {
+      await expect(searchBox(page)).toBeHidden();
+      await expect(page.getByRole("button", { name: "Search" })).toBeFocused();
+    }
+  });
+
+  test("Ctrl+K opens and focuses search", async ({ page }) => {
+    if (isMobile(page)) await expect(searchBox(page)).toBeHidden();
+    await page.locator("body").click({ position: { x: 1, y: 300 } });
+    await page.keyboard.press("Control+k");
+    await expect(searchBox(page)).toBeVisible();
+    await expect(searchBox(page)).toBeFocused();
+    await page.keyboard.type("apple");
+    await expect(stories(page)).toHaveCount(2);
+  });
+
+  test("a combination that matches nothing, then Clear filters", async ({
+    page,
+  }) => {
+    await page
+      .getByRole("group", { name: "Filter by company" })
+      .getByRole("button", { name: "AAPL" })
+      .click();
+    await page
+      .getByRole("combobox", { name: "Time range" })
+      .selectOption("24h");
+    await search(page, "filing");
+    await expect(
+      page.getByRole("heading", { name: "No stories match these filters" }),
+    ).toBeVisible();
+    await expect(page.getByRole("list", { name: "Stories" })).toHaveCount(0);
+    await expect(page.getByText("0 stories shown")).toBeAttached();
+
+    await page.getByRole("button", { name: "Clear filters" }).click();
+    await expect(stories(page)).toHaveCount(ALL_STORIES);
+    await expect(page.getByRole("heading", { level: 1 })).toBeFocused();
+    await expect(searchBox(page)).toHaveValue("");
+    await expect(
+      page.getByRole("combobox", { name: "Time range" }),
+    ).toHaveValue("any");
+    await expect(
+      page
+        .getByRole("group", { name: "Filter by company" })
+        .getByRole("button", { name: "All" }),
+    ).toHaveAttribute("aria-pressed", "true");
+  });
+
+  test("every unbuilt control says it is coming soon", async ({ page }) => {
+    const sidebar = page.getByRole("complementary", { name: "Sidebar" });
+    const panel = page.getByRole("complementary", {
+      name: "Coverage at a glance",
+    });
+    const tabs = page.getByRole("navigation", { name: "Tabs" });
+    const controls = isMobile(page)
+      ? [
+          [tabs.getByRole("button", { name: "Watchlist" }), "Watchlist"],
+          [tabs.getByRole("button", { name: "Saved" }), "Saved stories"],
+          [tabs.getByRole("button", { name: "Profile" }), "Profile"],
+          [
+            page.getByRole("button", { name: "Report a ticker mismatch" }),
+            "Mismatch reporting",
+          ],
+        ]
+      : [
+          [page.getByRole("button", { name: "Help" }), "Help"],
+          [
+            sidebar.getByRole("button", { name: "Saved stories" }),
+            "Saved stories",
+          ],
+          [
+            sidebar.getByRole("button", { name: "Manage watchlist" }),
+            "Watchlist management",
+          ],
+          [
+            stories(page)
+              .first()
+              .getByRole("button", { name: "View coverage" }),
+            "Coverage view",
+          ],
+          [
+            panel.getByRole("button", { name: "Manage watchlist" }),
+            "Watchlist management",
+          ],
+          [
+            page.getByRole("button", { name: "Report a ticker mismatch" }),
+            "Mismatch reporting",
+          ],
+        ];
+
+    for (const [control, feature] of controls as [
+      ReturnType<Page["locator"]>,
+      string,
+    ][]) {
+      await control.click();
+      await expect(notice(page)).toContainText(`${feature} is coming soon.`);
+      await notice(page).getByRole("button", { name: "Dismiss" }).click();
+      await expect(notice(page)).toHaveCount(0);
+    }
+  });
+
+  /** A control that shows a notice, focused and pressed from the keyboard. */
+  async function openNotice(page: Page) {
+    const control = isMobile(page)
+      ? page
+          .getByRole("navigation", { name: "Tabs" })
+          .getByRole("button", { name: "Profile" })
+      : page.getByRole("button", { name: "Help" });
+    await control.focus();
+    await page.keyboard.press("Enter");
+    await expect(notice(page)).toContainText("is coming soon.");
+    return control;
+  }
+
+  test("Dismiss and Escape hand focus back to the control", async ({
+    page,
+  }) => {
+    const control = await openNotice(page);
+    await notice(page).getByRole("button", { name: "Dismiss" }).focus();
+    await page.keyboard.press("Enter");
+    await expect(notice(page)).toHaveCount(0);
+    await expect(control).toBeFocused();
+
+    await page.keyboard.press("Enter");
+    await notice(page).getByRole("button", { name: "Dismiss" }).focus();
+    await page.keyboard.press("Escape");
+    await expect(notice(page)).toHaveCount(0);
+    await expect(control).toBeFocused();
+  });
+
+  test("Dismiss focuses the heading when the control was filtered away", async ({
+    page,
+  }) => {
+    test.skip(isMobile(page), "phones have no View coverage");
+    // The first story is AAPL's, so choosing NVDA removes it.
+    await stories(page)
+      .first()
+      .getByRole("button", { name: "View coverage" })
+      .press("Enter");
+    await page
+      .getByRole("group", { name: "Filter by company" })
+      .getByRole("button", { name: "NVDA" })
+      .click();
+    await notice(page).getByRole("button", { name: "Dismiss" }).press("Enter");
+    await expect(notice(page)).toHaveCount(0);
+    await expect(page.getByRole("heading", { level: 1 })).toBeFocused();
+  });
+
+  test("Escape focuses the heading when the control is now hidden", async ({
+    page,
+  }) => {
+    test.skip(isMobile(page), "phones have no Help");
+    await openNotice(page);
+    const dismiss = notice(page).getByRole("button", { name: "Dismiss" });
+    await dismiss.focus();
+    await page.setViewportSize({ width: 390, height: 844 });
+    await expect(page.getByRole("button", { name: "Help" })).toBeHidden();
+    await page.keyboard.press("Escape");
+    await expect(notice(page)).toHaveCount(0);
+    await expect(page.getByRole("heading", { level: 1 })).toBeFocused();
+  });
+
+  test("Escape closes a notice before it clears the search", async ({
+    page,
+  }) => {
+    await openNotice(page);
+    await search(page, "microsoft");
+    await page.keyboard.press("Escape");
+    await expect(notice(page)).toHaveCount(0);
+    await expect(searchBox(page)).toHaveValue("microsoft");
+    await expect(searchBox(page)).toBeFocused();
+    await expect(stories(page)).toHaveCount(2);
+    await page.keyboard.press("Escape");
+    await expect(page.locator("input[type=search]")).toHaveValue("");
+  });
+
+  test("select text is 16px for touch and 12px for a mouse, at any width", async ({
+    page,
+  }) => {
+    // A touch screen zooms in on a focused field under 16px.
+    const expected = isMobile(page) ? "16px" : "12px";
+    for (const width of [390, 900]) {
+      await page.setViewportSize({ width, height: 800 });
+      for (const name of ["Time range", "Source"]) {
+        await expect(page.getByRole("combobox", { name })).toHaveCSS(
+          "font-size",
+          expected,
+        );
+      }
+    }
+  });
+
+  test("the notice sits clear of the tab bar", async ({ page }) => {
+    test.skip(!isMobile(page), "the tab bar is phone only");
+    const tabs = page.getByRole("navigation", { name: "Tabs" });
+    await tabs.getByRole("button", { name: "Profile" }).click();
+    const box = (await notice(page).locator("> div").boundingBox())!;
+    const bar = (await tabs.boundingBox())!;
+    expect(box.y + box.height).toBeLessThanOrEqual(bar.y);
+  });
+
+  test("the original link opens the source in a new tab", async ({ page }) => {
+    const link = stories(page)
+      .first()
+      .getByRole("link", { name: /Original story/ });
+    await expect(link).toHaveAttribute(
+      "href",
+      "https://example.com/AAPL/latest",
+    );
+    await expect(link).toHaveAttribute("target", "_blank");
+    await expect(link).toHaveAttribute("rel", "noopener noreferrer");
+    await expect(link).toContainText("(opens in a new tab)");
+  });
+
+  test("the account menu signs out", async ({ page }) => {
+    await page.getByRole("button", { name: "Account menu" }).click();
+    const dialog = page.getByRole("dialog");
+    await expect(dialog).toContainText("Simeon");
+    await dialog.getByRole("button", { name: "Sign out" }).click();
+    await expect
+      .poll(() => calls(page))
+      .toEqual([{ action: "signOut", args: [] }]);
+  });
+
+  for (const scheme of ["light", "dark"] as const) {
+    test(`uses the ${scheme} board colours`, async ({ page }) => {
+      await page.emulateMedia({ colorScheme: scheme });
+      await page.reload();
+      await expect(page.locator("body[data-hydrated=true]")).toBeAttached();
+      const c = COLOR[scheme];
+      await expect(page.locator("body")).toHaveCSS("background-color", c.page);
+      await expect(page.getByRole("banner")).toHaveCSS(
+        "background-color",
+        c.card,
+      );
+      const card = stories(page).first();
+      await expect(card).toHaveCSS("background-color", c.card);
+      await expect(card).toHaveCSS("border-top-color", c.border);
+      await expect(page.getByRole("heading", { level: 1 })).toHaveCSS(
+        "color",
+        c.text,
+      );
+      await expect(
+        page
+          .getByRole("group", { name: "Filter by company" })
+          .getByRole("button", { name: "All" }),
+      ).toHaveCSS("background-color", COLOR.primary);
+      const chrome = isMobile(page)
+        ? page.getByRole("navigation", { name: "Tabs" })
+        : page.getByRole("complementary", { name: "Coverage at a glance" });
+      await expect(chrome).toHaveCSS("background-color", c.card);
+      if (!isMobile(page)) {
+        await expect(
+          page.getByRole("complementary", { name: "Sidebar" }),
+        ).toHaveCSS("background-color", c.card);
+      }
+    });
+  }
+});
+
+test.describe("unusual watchlists", () => {
+  let problems: string[];
+
+  test.beforeEach(async ({ page }) => {
+    problems = watchConsole(page);
+  });
+
+  test.afterEach(() => {
+    expect(problems).toEqual([]);
+  });
+
+  test("an empty watchlist says so and offers no filters", async ({ page }) => {
+    await open(page, "?tickers=");
+    await expect(
+      page.getByRole("heading", { name: "No companies yet" }),
+    ).toBeVisible();
+    await expect(
+      page.getByText(
+        "Add companies to follow and their news will appear here. Adding companies is coming soon.",
+      ),
+    ).toBeVisible();
+    await expect(
+      page.getByRole("group", { name: "Filter by company" }),
+    ).toHaveCount(0);
+    await expect(page.getByRole("list", { name: "Stories" })).toHaveCount(0);
+    await expect(
+      page.getByRole("button", { name: "Report a ticker mismatch" }),
+    ).toHaveCount(0);
+    await expect(
+      page.getByRole("complementary", { name: "Coverage at a glance" }),
+    ).toHaveCount(0);
+    await expectNoSidewaysScroll(page);
+  });
+
+  test("no first name still reads sensibly", async ({ page }) => {
+    await open(page, "?name=");
+    await page.getByRole("button", { name: "Account menu" }).click();
+    await expect(page.getByRole("dialog")).toContainText("Your account");
+    if (!isMobile(page)) {
+      await expect(
+        page.getByRole("complementary", { name: "Sidebar" }),
+      ).toContainText("Your account");
+    }
+  });
+
+  test("unknown tickers show the ticker, never undefined", async ({ page }) => {
+    await open(page, "?tickers=ZZZZ,BRK.B");
+    await expect(stories(page)).toHaveCount(4);
+    await expect(page.locator("body")).not.toContainText("undefined");
+    await expect(page.locator("body")).not.toContainText("null");
+    await expect(stories(page).first()).toContainText("ZZZZ");
+  });
+
+  test("50 tickers stay usable", async ({ page }) => {
+    await open(page, `?tickers=${FIFTY.join(",")}`);
+    const pills = page.getByRole("group", { name: "Filter by company" });
+    await expect(pills.getByRole("button")).toHaveCount(51);
+    // The last pill can be reached and used, even in the sideways row.
+    await pills.getByRole("button", { name: "T49" }).click();
+    await expect(stories(page)).toHaveCount(2);
+    await expectNoSidewaysScroll(page);
+  });
+
+  test("a long unbroken ticker and name do not widen the page", async ({
+    page,
+  }) => {
+    const long = "ABCDEFGHIJKLMNOPQRSTUVWXYZABCDEFGHIJKLMNOP";
+    await open(page, `?tickers=${long},AAPL&name=${long}${long}`);
+    await expect(stories(page).first()).toContainText(long);
+    await expectNoSidewaysScroll(page);
+    for (const story of await stories(page).all()) {
+      const box = (await story.boundingBox())!;
+      expect(box.x + box.width).toBeLessThanOrEqual(page.viewportSize()!.width);
+    }
+    await page.getByRole("button", { name: "Account menu" }).click();
+    const dialog = (await page.getByRole("dialog").boundingBox())!;
+    expect(dialog.x).toBeGreaterThanOrEqual(0);
+    expect(dialog.x + dialog.width).toBeLessThanOrEqual(
+      page.viewportSize()!.width,
+    );
+    await expectNoSidewaysScroll(page);
+  });
+});
+
+test.describe("keyboard", () => {
+  test("Tab reaches every control in order", async ({ page }) => {
+    await open(page);
+    const mobile = isMobile(page);
+    const expected = mobile
+      ? [
+          "equitycairn",
+          "Search",
+          "Account menu",
+          "All",
+          ...DEFAULT,
+          "Time range",
+          "Source",
+          ...Array(ALL_STORIES).fill("Original story"),
+          "Report a ticker mismatch",
+          "Feed",
+          "Watchlist",
+          "Saved",
+          "Profile",
+        ]
+      : [
+          "equitycairn",
+          "Search companies, tickers, or stories",
+          "Help",
+          "Account menu",
+          "News feed",
+          "Saved stories",
+          "Manage watchlist",
+          "All",
+          ...DEFAULT,
+          "Time range",
+          "Source",
+          ...Array(ALL_STORIES)
+            .fill(["Original story", "View coverage"])
+            .flat(),
+          "Manage watchlist",
+          "Report a ticker mismatch",
+        ];
+
+    const reached: string[] = [];
+    await page.locator("body").focus();
+    for (let i = 0; i < expected.length; i++) {
+      await page.keyboard.press("Tab");
+      reached.push(
+        await page.evaluate(() => {
+          const el = document.activeElement as HTMLElement;
+          const label =
+            el.getAttribute("aria-label") ??
+            el.textContent?.replace(/[↗→]|\(opens in a new tab\)/g, "") ??
+            "";
+          return label.trim();
+        }),
+      );
+    }
+    expect(reached).toEqual(expected);
+  });
+
+  test("a focused element is never hidden under the header or tab bar", async ({
+    page,
+  }) => {
+    await open(page);
+    if (isMobile(page)) {
+      // The open search row makes the phone header taller.
+      await page.getByRole("button", { name: "Search" }).click();
+      await expect(searchBox(page)).toBeFocused();
+    }
+    const header = page.getByRole("banner");
+    const tabs = page.getByRole("navigation", { name: "Tabs" });
+    const mobile = isMobile(page);
+    const visibleArea = async () => {
+      const top = (await header.boundingBox())!;
+      const bottom = mobile
+        ? (await tabs.boundingBox())!.y
+        : page.viewportSize()!.height;
+      return { top: top.y + top.height, bottom };
+    };
+    /** Walks focus with `key` until it reaches `last`, checking each stop. */
+    const walk = async (key: string, last: RegExp) => {
+      for (let step = 0; step < 60; step++) {
+        await page.keyboard.press(key);
+        const focused = page.locator(":focus");
+        const inChrome = await focused.evaluate(
+          (el) => !!el.closest("header, nav[aria-label='Tabs']"),
+        );
+        const name = await focused.evaluate(
+          (el) => el.getAttribute("aria-label") ?? el.textContent ?? "",
+        );
+        if (!inChrome) {
+          const box = (await focused.boundingBox())!;
+          const area = await visibleArea();
+          expect(box.y, `${name} under the header`).toBeGreaterThanOrEqual(
+            area.top,
+          );
+          expect(
+            box.y + box.height,
+            `${name} under the bottom edge`,
+          ).toBeLessThanOrEqual(area.bottom);
+        }
+        if (last.test(name)) return;
+      }
+      throw new Error(`never reached ${last}`);
+    };
+    // Down to the end of the page, then back up to the header.
+    await walk("Tab", mobile ? /^Feed$/ : /Report a ticker mismatch/);
+    await walk("Shift+Tab", mobile ? /^Search$/ : /^Account menu$/);
+  });
+});
+
+test("narrowing the window lets go of the hidden search field", async ({
+  page,
+}) => {
+  test.skip(isMobile(page), "starts on a desktop");
+  await open(page);
+  await searchBox(page).click();
+  await expect(searchBox(page)).toBeFocused();
+  await page.setViewportSize({ width: 400, height: 800 });
+  await expect(searchBox(page)).toBeHidden();
+  await expect(page.locator("input[type=search]")).not.toBeFocused();
+  const toggle = page.getByRole("button", { name: "Search" });
+  await expect(toggle).toHaveAttribute("aria-expanded", "false");
+  // The phone search still opens as usual, and the desktop shows it again.
+  await toggle.click();
+  await expect(searchBox(page)).toBeFocused();
+  await page.setViewportSize({ width: 1280, height: 800 });
+  await expect(searchBox(page)).toBeVisible();
+});
+
+// 32px is a phone layout even on the desktop's 1280px: `md` is 48rem.
+for (const fontSize of [16, 20, 32]) {
+  test(`scrolling to focus clears the header, search row and tab bar at a ${fontSize}px font`, async ({
+    page,
+  }) => {
+    // Browsers that align a focused element to the edge (rather than centring
+    // it, as Chromium does on Tab) rely on the page's scroll padding.
+    await setDefaultFontSize(page, fontSize);
+    await open(page);
+    await expectScrollPaddingClearsChrome(page);
+  });
+}
+
+async function expectScrollPaddingClearsChrome(page: Page) {
+  const tabs = page.getByRole("navigation", { name: "Tabs" });
+  const mobile = await tabs.isVisible();
+  for (const searchOpen of mobile ? [false, true] : [false]) {
+    if (searchOpen) await page.getByRole("button", { name: "Search" }).click();
+    const header = (await page.getByRole("banner").boundingBox())!;
+    const bottom = mobile
+      ? (await tabs.boundingBox())!.y
+      : page.viewportSize()!.height;
+    const links = page.getByRole("link", { name: /Original story/ });
+    for (const [i, block] of [
+      [2, "start"],
+      [3, "end"],
+    ] as const) {
+      await links
+        .nth(i)
+        .evaluate((el, b) => el.scrollIntoView({ block: b }), block);
+      const box = (await links.nth(i).boundingBox())!;
+      // Within a pixel: the padding is whole pixels, boxes are not.
+      expect(box.y, `${block}, search ${searchOpen}`).toBeGreaterThanOrEqual(
+        header.y + header.height - 1,
+      );
+      expect(box.y + box.height, `${block}`).toBeLessThanOrEqual(bottom + 1);
+    }
+  }
+}
+
+test("/feed redirects signed-out visitors to /login", async ({ page }) => {
+  await page.goto("/feed");
+  await expect(page).toHaveURL(/\/login$/);
+});
