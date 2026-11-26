@@ -20,12 +20,15 @@ export function OptionCards({
   onValueChange,
   options,
   className,
+  clearable = true,
 }: {
   legend: string;
   value: string;
   onValueChange: (value: string) => void;
   options: readonly (readonly [string, string])[];
   className?: string;
+  /** False where one of the options already means "no answer". */
+  clearable?: boolean;
 }) {
   const legendId = useId();
   return (
@@ -34,7 +37,7 @@ export function OptionCards({
         <p id={legendId} className="text-sm font-semibold">
           {legend}
         </p>
-        {value && (
+        {clearable && value && (
           <Button
             type="button"
             variant="link"

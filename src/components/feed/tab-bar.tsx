@@ -13,10 +13,20 @@ const TAB =
 const SOON_TABS = [
   { label: "Watchlist", feature: "Watchlist", Icon: List },
   { label: "Saved", feature: "Saved stories", Icon: Bookmark },
-  { label: "Profile", feature: "Profile", Icon: User },
 ];
 
-export function TabBar() {
+/** Marks the current tab without relying on colour. */
+function Indicator() {
+  return (
+    <span
+      aria-hidden="true"
+      data-slot="tab-indicator"
+      className="absolute top-0 h-[3px] w-6 rounded-b-full bg-link"
+    />
+  );
+}
+
+export function TabBar({ current = "feed" }: { current?: "feed" | "profile" }) {
   const comingSoon = useComingSoon();
   const nav = useRef<HTMLElement>(null);
   // For the page's scroll padding (globals.css); 0 from `md`, where it is
@@ -30,15 +40,10 @@ export function TabBar() {
     >
       <Link
         href="/feed"
-        aria-current="page"
-        className={`${TAB} relative text-link`}
+        aria-current={current === "feed" ? "page" : undefined}
+        className={`${TAB} relative ${current === "feed" ? "text-link" : "text-muted-foreground"}`}
       >
-        {/* Marks the current tab without relying on colour. */}
-        <span
-          aria-hidden="true"
-          data-slot="tab-indicator"
-          className="absolute top-0 h-[3px] w-6 rounded-b-full bg-link"
-        />
+        {current === "feed" && <Indicator />}
         <Newspaper className="size-5" />
         Feed
       </Link>
@@ -53,6 +58,16 @@ export function TabBar() {
           {label}
         </button>
       ))}
+      <Link
+        // On settings, a repeat tap keeps the page the user first came from.
+        href={current === "profile" ? "/settings" : "/settings?from=/feed"}
+        aria-current={current === "profile" ? "page" : undefined}
+        className={`${TAB} relative ${current === "profile" ? "text-link" : "text-muted-foreground"}`}
+      >
+        {current === "profile" && <Indicator />}
+        <User className="size-5" />
+        Profile
+      </Link>
     </nav>
   );
 }
