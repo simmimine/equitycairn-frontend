@@ -34,6 +34,38 @@ describe("AccountMenu", () => {
     ).toBeInTheDocument();
   });
 
+  it("links to settings above sign out, and closes when followed", async () => {
+    render(<AccountMenu firstName="Ann" signOutAction={vi.fn()} />);
+    open();
+    const link = await screen.findByRole("link", { name: "Settings" });
+    expect(link).toHaveAttribute("href", "/settings?from=/feed");
+    expect(
+      link.compareDocumentPosition(
+        screen.getByRole("button", { name: "Sign out" }),
+      ) & Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+    // jsdom cannot navigate.
+    link.addEventListener("click", (event) => event.preventDefault());
+    fireEvent.click(link);
+    await vi.waitFor(() => {
+      expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+    });
+  });
+
+  it("takes another settings address", async () => {
+    render(
+      <AccountMenu
+        firstName="Ann"
+        signOutAction={vi.fn()}
+        settingsHref="/settings"
+      />,
+    );
+    open();
+    expect(
+      await screen.findByRole("link", { name: "Settings" }),
+    ).toHaveAttribute("href", "/settings");
+  });
+
   it("calls the sign out action", async () => {
     const signOutAction = vi.fn();
     render(<AccountMenu firstName="Ann" signOutAction={signOutAction} />);

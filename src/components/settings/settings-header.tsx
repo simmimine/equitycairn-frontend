@@ -29,7 +29,11 @@ export function SettingsHeader({
         </Link>
         <SettingsSearch />
         <div className="flex items-center gap-2 md:justify-self-end">
-          <AccountMenu firstName={firstName} signOutAction={signOutAction} />
+          <AccountMenu
+            firstName={firstName}
+            signOutAction={signOutAction}
+            settingsHref="/settings"
+          />
         </div>
       </div>
     </header>
