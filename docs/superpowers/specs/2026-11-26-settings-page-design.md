@@ -104,7 +104,8 @@ the top right and the profile at the bottom left of the feed.
 3. Password: enter the new password twice (`validatePassword`), press the button. Deletion: a
    warning that it is permanent, then a "Delete my account" button.
 4. Success: the password changes (admin API) and every session ends, or the account is deleted.
-   The browser's session cookies are cleared. Offer sign-in, or the home page.
+   The browser's session cookies are cleared. A success screen offers a button to the home page,
+   and stays even though the link is now used up.
 5. Used, expired, replaced or unknown links show one message: request a new one from Settings.
 
 Rules:

@@ -1,3 +1,5 @@
+import { connection } from "next/server";
+
 import {
   confirmAccountDeletion,
   confirmPasswordChange,
@@ -24,11 +26,16 @@ export async function ConfirmContent({
   if (typeof token !== "string" || !TOKEN.test(token)) {
     return <InvalidLinkScreen />;
   }
+  // The lookup reads the clock: wait for the real request, or Next's prerender
+  // validation rejects it.
+  await connection();
   const link = await peekLink(token);
-  if (!link) return <InvalidLinkScreen />;
+  // The same element for a live and a dead link, so a redraw after the link is
+  // used keeps the view's state (see ConfirmView).
   return (
     <ConfirmView
-      purpose={link.purpose}
+      key={token}
+      purpose={link?.purpose ?? null}
       token={token}
       changePassword={confirmPasswordChange}
       deleteAccount={confirmAccountDeletion}

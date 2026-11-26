@@ -43,13 +43,18 @@ export function InvalidLinkScreen() {
   );
 }
 
+/**
+ * The emailed link's page. `purpose` is null for a dead link. Only the first
+ * value counts: using the link makes Next redraw the page with a dead link,
+ * which must not replace this view's own outcome.
+ */
 export function ConfirmView({
-  purpose,
+  purpose: current,
   token,
   changePassword,
   deleteAccount,
 }: {
-  purpose: LinkPurpose;
+  purpose: LinkPurpose | null;
   token: string;
   changePassword: (
     token: string,
@@ -58,6 +63,7 @@ export function ConfirmView({
   ) => Promise<ConfirmResult>;
   deleteAccount: (token: string) => Promise<ConfirmResult>;
 }) {
+  const [purpose] = useState(current);
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
   const [result, setResult] = useState<ConfirmResult | null>(null);
@@ -66,6 +72,7 @@ export function ConfirmView({
   const running = useRef(false);
   const deleting = purpose === "account_delete";
 
+  if (!purpose) return <InvalidLinkScreen />;
   if (result?.ok) {
     return deleting ? (
       <LinkScreen
@@ -78,9 +85,9 @@ export function ConfirmView({
     ) : (
       <LinkScreen
         title="Password changed"
-        description="You've been signed out everywhere. Log in with your new password."
-        href="/login"
-        action="Log in"
+        description="You've been signed out everywhere. Log in again with your new password."
+        href="/"
+        action="Back to home"
         icon="check"
       />
     );

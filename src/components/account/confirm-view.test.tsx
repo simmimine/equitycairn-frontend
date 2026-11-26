@@ -40,9 +40,9 @@ describe("ConfirmView", () => {
     expect(
       await screen.findByRole("heading", { name: "Password changed" }),
     ).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "Log in" })).toHaveAttribute(
+    expect(screen.getByRole("link", { name: "Back to home" })).toHaveAttribute(
       "href",
-      "/login",
+      "/",
     );
   });
 
@@ -55,9 +55,10 @@ describe("ConfirmView", () => {
     expect(
       await screen.findByRole("heading", { name: "Account deleted" }),
     ).toBeInTheDocument();
-    expect(
-      screen.getByRole("link", { name: "Back to home" }),
-    ).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Back to home" })).toHaveAttribute(
+      "href",
+      "/",
+    );
   });
 
   it("runs once for two quick presses", async () => {
