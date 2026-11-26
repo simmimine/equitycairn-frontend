@@ -12,3 +12,9 @@ export const LOGIN_ATTEMPTS = {
 } as const;
 
 export const ACCOUNT_LINK_TTL_MINUTES = 30;
+
+export const ACCOUNT_LIMITS = {
+  link: { max: 3, windowSeconds: 600 },
+  confirm: { max: 10, windowSeconds: 600 },
+  bug: { max: 5, windowSeconds: 3600 },
+} as const;

@@ -6,7 +6,13 @@ export type AttemptLimit = { max: number; windowSeconds: number };
 
 /** Counts an attempt for `scope:clientKey`; the database decides atomically. */
 export async function checkAttempts(
-  scope: "login-email" | "login-pw" | "confirm",
+  scope:
+    | "login-email"
+    | "login-pw"
+    | "confirm"
+    | "account-link"
+    | "account-confirm"
+    | "bug-report",
   clientKey: string,
   limit: AttemptLimit,
 ): Promise<{ allowed: true } | { allowed: false; retryAfterSeconds: number }> {
