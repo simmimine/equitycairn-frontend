@@ -10,3 +10,5 @@ export const LOGIN_ATTEMPTS = {
   email: { max: 20, windowSeconds: 600 },
   password: { max: 10, windowSeconds: 600 },
 } as const;
+
+export const ACCOUNT_LINK_TTL_MINUTES = 30;
