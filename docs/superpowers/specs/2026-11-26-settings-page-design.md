@@ -15,6 +15,7 @@ the top right and the profile at the bottom left of the feed.
 - Change password and delete account, each proven by a link sent to the sign-up email.
 - Report a bug: saved in Supabase, and the owner is emailed.
 - A subscription placeholder.
+- Search the settings, with a keyboard shortcut (added by the owner after approval).
 
 ## Non-goals
 
@@ -32,7 +33,8 @@ the top right and the profile at the bottom left of the feed.
 ## Constraints
 
 - Next.js 16: read `node_modules/next/dist/docs/` before Next-specific code. pnpm.
-- shadcn components and existing theme tokens. There is no design board for this page.
+- shadcn components and existing theme tokens. Design: Penpot section "Settings page · Desktop +
+  Mobile" (four page boards, four search boards; 1440 and 390, light and dark).
 - Text never below 11px; phone to wide desktop, light and dark, keyboard operable.
 - Every server action re-checks the session; the proxy is not a security boundary.
 - Never log email addresses, tokens or report text.
@@ -58,8 +60,17 @@ the top right and the profile at the bottom left of the feed.
 - Sections in order: Profile, Appearance, Account and security, Subscription, Report a bug,
   Privacy and help.
 - From `md`: section links on the left, panels on the right. Phones: stacked.
-- Header: wordmark linking to the feed, and the account menu. No story search.
+- Header: wordmark linking to the feed, settings search, and the account menu. No story search.
 - Phones keep the bottom tab bar with Profile marked current.
+
+### Settings search
+
+- Same place and shortcut as the feed search: Ctrl+K or ⌘K focuses it, on any keyboard layout.
+  Phones: a magnifier opens a search row under the header.
+- Matches setting names and section names, ignoring case. Each result shows the setting and its
+  section. No match: "No settings match".
+- Up and Down move, Enter or a tap goes to the setting and focuses its control (it never
+  presses it), Escape closes and clears.
 
 ### Entry points
 

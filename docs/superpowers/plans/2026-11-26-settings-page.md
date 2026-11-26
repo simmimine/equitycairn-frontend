@@ -10,11 +10,13 @@
 
 **Spec:** `docs/superpowers/specs/2026-11-26-settings-page-design.md`
 
+**Design:** Penpot "EquityCairn Designs", section "Settings page · Desktop + Mobile". Match it; where it uses text or colours the app tokens already cover, use the tokens.
+
 ## Global Constraints
 
 - pnpm only. Read `node_modules/next/dist/docs/` before Next-specific code (AGENTS.md).
 - Use `trail ask "<task>" --source` to locate code; run `trail check` before each commit.
-- shadcn components and existing theme tokens; no design board. Text never below 11px. Phone to wide desktop, light and dark, keyboard operable.
+- shadcn components and existing theme tokens, matching the Penpot boards. Text never below 11px. Phone to wide desktop, light and dark, keyboard operable.
 - Every server action re-checks the session itself. Never log email addresses, tokens or report text.
 - Link lifetime 30 minutes, single use, one live link per user per purpose.
 - Limits: link requests 3 per 600s per account; confirmations 10 per 600s per client; bug reports 5 per 3600s per account.
@@ -211,8 +213,27 @@
   - tab bar: Profile is a link; `current="profile"` gives it `aria-current="page"`.
   - proxy: matcher contains `/settings/:path*`.
 - [ ] **Step 2:** `pnpm test settings tab-bar proxy` → FAIL.
-- [ ] **Step 3:** Implement. Follow `feed-content.tsx` and `feed/page.tsx` for the route. Wrap in `ComingSoonProvider` (the tab bar needs it). Header: wordmark link to `/feed` and `AccountMenu`, no search. From `md` a link list left, panels right; phones stacked with bottom padding clear of the tab bar. Reuse `OptionCards`, `Field`, `Input`, `Textarea`, `Button`, `SURFACE`. Disable submit buttons while pending.
+- [ ] **Step 3:** Implement. Follow `feed-content.tsx` and `feed/page.tsx` for the route. Wrap in `ComingSoonProvider` (the tab bar needs it). Header: wordmark link to `/feed`, the settings search (Task 8b) and `AccountMenu`. From `md` a link list left, panels right; phones stacked with bottom padding clear of the tab bar. Reuse `OptionCards`, `Field`, `Input`, `Textarea`, `Button`, `SURFACE`. Disable submit buttons while pending.
 - [ ] **Step 4:** → PASS; `pnpm typecheck && pnpm lint` clean. **Step 5: Commit** `feat: add the settings page`
+
+### Task 8b: Settings search
+
+**Files:** Create: `src/lib/settings/search.ts`, `src/components/settings/settings-search.tsx` (+tests), `src/lib/search-shortcut.ts`. Modify: `src/components/feed/app-header.tsx` (move `isSearchShortcut` and the platform hint to the new module), `settings-header.tsx`
+
+**Interfaces:**
+- Produces: `isSearchShortcut(event: KeyboardEvent): boolean` and `useShortcutHint(): string | null` in `search-shortcut.ts`; `type SettingEntry = { id: string; title: string; section: string }`; `SETTINGS: readonly SettingEntry[]`; `searchSettings(query: string): SettingEntry[]`; `SettingsSearch()`. Each `id` is the DOM id of that setting's focusable control or section heading (`tabIndex={-1}`), set by the section components.
+
+- [ ] **Step 1: Failing tests**
+  - `searchSettings("")` and `("   ")` → `[]`; `("SIGN")` → "Sign out", "Sign out of all devices"; a section name returns that section's settings; `("zzz")` → `[]`.
+  - every `SETTINGS` id exists exactly once in a rendered `SettingsApp`.
+  - Ctrl+K and ⌘K focus the field and call `preventDefault`; on phones they open the row first.
+  - Down/Up move the highlight (`aria-activedescendant`), Enter and click focus the target and close; choosing "Delete account" or "Sign out" calls **no** action.
+  - Escape closes and clears; no match shows "No settings match".
+  - existing `app-header` tests still pass.
+- [ ] **Step 2:** `pnpm test settings app-header` → FAIL.
+- [ ] **Step 3:** Implement as a labelled combobox with a listbox; reuse the feed header's phone open/close behaviour.
+- [ ] **Step 4:** → PASS. Add to the Task 10 e2e spec: shortcut, choose a result, focus lands on it.
+- [ ] **Step 5: Commit** `feat: search settings with a keyboard shortcut`
 
 ### Task 9: Entry points from the feed
 
