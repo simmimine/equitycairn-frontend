@@ -174,6 +174,21 @@ describe("account and security", () => {
   });
 });
 
+describe("sign out of all devices", () => {
+  it.each([
+    [
+      "server_error",
+      "We couldn't sign out your other devices. Please try again.",
+    ],
+    ["unauthenticated", "Your session has ended."],
+  ])("says so on %s", async (error, text) => {
+    actions.signOutEverywhere.mockResolvedValue({ ok: false, error });
+    const user = show();
+    await user.click(button("Sign out of all devices"));
+    expect(await screen.findByText(text, { exact: false })).toBeInTheDocument();
+  });
+});
+
 describe("subscription", () => {
   it("only says it is coming", () => {
     show();

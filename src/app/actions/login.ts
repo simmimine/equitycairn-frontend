@@ -13,11 +13,13 @@ import {
 import { checkAttempts } from "@/lib/auth/attempts";
 import { LOGIN_ATTEMPTS } from "@/lib/auth/constants";
 import { validatePassword } from "@/lib/auth/password";
+import { getUser } from "@/lib/auth/session";
 import type {
   CheckEmailResult,
   CreateAccountResult,
   ResendBetaResult,
   SignInResult,
+  SignOutEverywhereResult,
 } from "@/lib/auth/types";
 import { sendConfirmEmail } from "@/lib/email/confirm-email";
 import { sendVerificationEmail } from "@/lib/email/verification-email";
@@ -209,7 +211,18 @@ export async function signOut(): Promise<void> {
   redirect("/");
 }
 
-export async function signOutEverywhere(): Promise<void> {
-  await signOutSession("global");
+/** Redirects only once every session really is ended; otherwise says why not. */
+export async function signOutEverywhere(): Promise<SignOutEverywhereResult> {
+  try {
+    // Without a session Supabase would revoke nothing.
+    if (!(await getUser())) return { ok: false, error: "unauthenticated" };
+    if (!(await signOutSession("global"))) {
+      return { ok: false, error: "server_error" };
+    }
+  } catch (err) {
+    logFailure("signOutEverywhere failure", err);
+    return { ok: false, error: "server_error" };
+  }
+  // Outside the try block: redirect() throws a control-flow error.
   redirect("/");
 }

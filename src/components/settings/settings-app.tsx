@@ -9,6 +9,7 @@ import type { saveProfileAction } from "@/app/actions/settings";
 import { ComingSoonProvider } from "@/components/feed/coming-soon";
 import { FOCUS_RING } from "@/components/feed/styles";
 import { TabBar } from "@/components/feed/tab-bar";
+import type { SignOutEverywhereResult } from "@/lib/auth/types";
 
 import { AccountSection } from "./account-section";
 import { AppearanceSection } from "./appearance-section";
@@ -24,7 +25,8 @@ export type SettingsActions = {
   requestLink: typeof requestAccountLink;
   reportBug: typeof reportBugAction;
   signOut: () => void | Promise<void>;
-  signOutEverywhere: () => void | Promise<void>;
+  /** Resolves only on failure: success redirects. */
+  signOutEverywhere: () => Promise<SignOutEverywhereResult | void>;
 };
 
 /** The same scroll padding as the feed: clear of the header and tab bar. */

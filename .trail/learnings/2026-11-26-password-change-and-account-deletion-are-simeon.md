@@ -3,7 +3,7 @@ title: Password change and account deletion are confirmed by our own one-time em
 author: Simeon
 date: 2026-11-26
 branch: docs/settings-page-brainstorm
-cost: { minutes: 9, tokens: 102659 }
+cost: { minutes: 31, tokens: 340792 }
 id: l-2f89ae62
 scope: repo
 status: active
@@ -15,6 +15,10 @@ touches:
   - src/proxy.ts
   - docs/superpowers/plans/2026-11-26-settings-page.md
   - src/components/feed/app-header.tsx
+  - e2e/feed.spec.ts
+  - e2e/global-setup.ts
+  - e2e/settings.spec.ts
+  - playwright.config.ts
 ---
 
 ## Decided
@@ -22,6 +26,7 @@ Both actions send a link to the sign-up email, because the owner wants proof it 
 Turn on Supabase "Require current password when changing" and set the session cookie httpOnly, because a stolen session could otherwise change the password directly and skip our emailed link (not built or switched on yet).
 Deleting an account removes the beta sign-up record and the auth user in one database function, because both must go together (planned, not built yet). The confirm page uses referrer `strict-origin`.
 Settings search was added by the owner after the design was approved, and uses the same Ctrl+K / ⌘K as the feed search, because both sit in the header (not built yet).
+"Sign out of all devices" redirects only when Supabase confirms it, because `signOut` returns an error instead of throwing and the first version sent the user home as if it had worked. A password change ends sessions before and after the update, because a database failure would otherwise leave a new password with old sessions still live.
 
 ## Tried and ruled out
 - Supabase's recovery link for passwords with our own link for deletion: rejected because it means two systems, and using the recovery link signs in whoever holds it.
@@ -30,6 +35,7 @@ Settings search was added by the owner after the design was approved, and uses t
 - A delete trigger on the auth users table: rejected because `createPendingAccount` deletes unconfirmed users when someone signs up again, so it would wipe their beta sign-up.
 - Referrer `no-referrer` on the confirm page: rejected because it should send `Origin: null` on the form post, which Next would refuse (reasoned from the fetch rules, not tested).
 - Creating three full boards in one Penpot script: it failed with a 120 second timeout and left nothing behind, because one large board alone takes about 17 seconds.
+- Ignoring the result of `signOut` for the global scope: rejected because a lost device would stay signed in unnoticed.
 
 ## Watch out
 - Supabase `signOut()` defaults to global scope, because of which the current Sign out ends every session.
@@ -46,3 +52,7 @@ In the code: docs/superpowers/plans/2026-11-26-settings-page.md, src/lib/auth/ac
 - After that timeout the helpers kept in Penpot `storage` were gone, so they had to be redefined.
 
 In the code: docs/superpowers/plans/2026-11-26-settings-page.md, `isSearchShortcut` in src/components/feed/app-header.tsx.
+- The settings migration has never been run, because there is no local Supabase; `end_user_sessions` deletes from `auth.sessions` and needs checking on a real project.
+- The proxy lets server action requests to the settings page through without a session, because a redirect would hide the "session ended" message; every action must keep checking the session itself.
+
+In the code: `signOutEverywhere` in src/app/actions/login.ts, `setPassword` in src/lib/account/admin.ts, `proxy` in src/proxy.ts.

@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import type { LinkPurpose } from "@/lib/account/links";
 import { attempt } from "@/lib/attempt";
 import { ACCOUNT_LINK_TTL_MINUTES } from "@/lib/auth/constants";
+import type { SignOutEverywhereResult } from "@/lib/auth/types";
 
 import {
   ACTION,
@@ -54,12 +55,31 @@ export function AccountSection({
   email: string;
   requestLink: typeof requestAccountLink;
   signOut: () => void | Promise<void>;
-  signOutEverywhere: () => void | Promise<void>;
+  signOutEverywhere: () => Promise<SignOutEverywhereResult | void>;
 }) {
   // One message, under whichever link was asked for last.
   const [asked, setAsked] = useState<LinkPurpose | null>(null);
   const [status, setStatus] = useState<Status>(null);
   const [pending, startTransition] = useTransition();
+
+  const [everywhere, setEverywhere] = useState<Status>(null);
+
+  function endEverywhere() {
+    setEverywhere(null);
+    startTransition(async () => {
+      // Success redirects, so any result is a failure.
+      const result = await attempt(signOutEverywhere);
+      if (!result) return;
+      setEverywhere(
+        result.error === "unauthenticated"
+          ? { tone: "ended" }
+          : {
+              tone: "error",
+              text: "We couldn't sign out your other devices. Please try again.",
+            },
+      );
+    });
+  }
 
   function ask(purpose: LinkPurpose) {
     setAsked(purpose);
@@ -119,17 +139,18 @@ export function AccountSection({
             Sign out
           </Button>
         </form>
-        <form action={signOutEverywhere}>
-          <Button
-            id="setting-sign-out-all"
-            type="submit"
-            variant="outline"
-            className={ACTION}
-          >
-            Sign out of all devices
-          </Button>
-        </form>
+        <Button
+          id="setting-sign-out-all"
+          type="button"
+          variant="outline"
+          disabled={pending}
+          onClick={endEverywhere}
+          className={ACTION}
+        >
+          Sign out of all devices
+        </Button>
       </Row>
+      <FormStatus status={everywhere} />
       <Row
         title="Delete account"
         hint="Permanent. We'll email you a link to confirm."

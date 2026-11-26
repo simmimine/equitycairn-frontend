@@ -195,6 +195,13 @@ describe("signInWithPassword", () => {
 });
 
 describe("signOutSession", () => {
+  it("reports whether the sessions were really ended", async () => {
+    sessionSignOut.mockResolvedValue({ error: null });
+    expect(await signOutSession("global")).toBe(true);
+    sessionSignOut.mockResolvedValue({ error: { message: "unreachable" } });
+    expect(await signOutSession("global")).toBe(false);
+  });
+
   it.each(["local", "global"] as const)(
     "signs out with %s scope through the session client",
     async (scope) => {

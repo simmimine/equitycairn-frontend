@@ -24,19 +24,24 @@ beforeEach(() => {
 });
 
 describe("setPassword", () => {
-  it("changes the password and then ends every session", async () => {
+  it("ends every session before and after changing the password", async () => {
     await setPassword("u1", "a new long password");
     expect(updateUserById).toHaveBeenCalledWith("u1", {
       password: "a new long password",
     });
     expect(rpc).toHaveBeenCalledWith("end_user_sessions", { p_user_id: "u1" });
-    expect(order).toEqual(["update", "end_user_sessions"]);
+    expect(order).toEqual(["end_user_sessions", "update", "end_user_sessions"]);
   });
 
-  it("throws and keeps sessions when the update fails", async () => {
+  it("leaves the password alone when sessions cannot be ended", async () => {
+    rpc.mockResolvedValue({ error: { message: "permission denied" } });
+    await expect(setPassword("u1", "pw")).rejects.toThrow();
+    expect(updateUserById).not.toHaveBeenCalled();
+  });
+
+  it("throws when the update fails", async () => {
     updateUserById.mockResolvedValue({ error: { message: "nope" } });
     await expect(setPassword("u1", "pw")).rejects.toThrow();
-    expect(rpc).not.toHaveBeenCalled();
   });
 });
 
