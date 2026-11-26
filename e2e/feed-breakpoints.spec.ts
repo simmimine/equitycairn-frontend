@@ -381,7 +381,8 @@ for (const [fontSize, width, height] of [
       await expect(control).toBeFocused();
       const focused = await box(control);
       const p = await box(profile);
-      expect(focused.y + focused.height).toBeLessThanOrEqual(p.y + 1);
+      // Clear of the control and of its 3px focus ring.
+      expect(focused.y + focused.height + 3).toBeLessThanOrEqual(p.y + 0.5);
       expect(focused.y).toBeGreaterThanOrEqual((await box(sidebar)).y - 1);
     }
   });

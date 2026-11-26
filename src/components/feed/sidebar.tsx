@@ -37,7 +37,7 @@ export function Sidebar({
       className={cn(
         FOCUS_RING,
         // Below the header: 4.6875rem plus its 1px border (see AppHeader).
-        "sticky hidden w-[13.75rem] shrink-0 flex-col gap-[26px] self-start overflow-y-auto border-r scroll-pb-(--feed-profile-height) bg-card px-3 pt-[22px] focus-visible:ring-inset md:top-[calc(4.6875rem+1px)] md:flex md:h-[calc(100dvh-4.6875rem-1px)] lg:w-[16.25rem] lg:px-4",
+        "sticky hidden w-[13.75rem] shrink-0 flex-col gap-[26px] self-start overflow-y-auto border-r scroll-pb-[calc(var(--feed-profile-height)+3px)] bg-card px-3 pt-[22px] focus-visible:ring-inset md:top-[calc(4.6875rem+1px)] md:flex md:h-[calc(100dvh-4.6875rem-1px)] lg:w-[16.25rem] lg:px-4",
       )}
     >
       <nav aria-label="Main" className="flex flex-col gap-2.5">

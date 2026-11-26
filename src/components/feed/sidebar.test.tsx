@@ -147,7 +147,9 @@ describe("Sidebar", () => {
         .mockReturnValue({ height: 90 } as DOMRect);
       const root = document.documentElement.style;
       const { unmount } = renderSidebar();
-      expect(sidebar()).toHaveClass("scroll-pb-(--feed-profile-height)");
+      expect(sidebar()).toHaveClass(
+        "scroll-pb-[calc(var(--feed-profile-height)+3px)]",
+      );
       expect(root.getPropertyValue("--feed-profile-height")).toBe("90px");
       height.mockReturnValue({ height: 150 } as DOMRect);
       observer.resize();
