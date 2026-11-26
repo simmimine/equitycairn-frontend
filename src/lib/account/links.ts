@@ -8,6 +8,8 @@ export type LinkPurpose = "password_change" | "account_delete";
 
 const TABLE = "account_action_tokens";
 
+export type UsedLink = { userId: string; expiresAt: string };
+
 function check(context: string, error: { message: string } | null) {
   if (error) throw new Error(`account links: ${context}: ${error.message}`);
 }
@@ -54,15 +56,38 @@ export async function consumeLink(
   raw: string,
   purpose: LinkPurpose,
   now = new Date(),
-): Promise<{ userId: string } | null> {
+): Promise<UsedLink | null> {
   const { data, error } = await getSupabaseAdmin()
     .from(TABLE)
     .delete()
     .eq("token_hash", hashToken(raw))
     .eq("purpose", purpose)
     .gt("expires_at", now.toISOString())
-    .select("user_id");
+    .select("user_id,expires_at");
   check("consume", error);
-  const row = (data as { user_id: string }[] | null)?.[0];
-  return row ? { userId: row.user_id } : null;
+  const row = (data as { user_id: string; expires_at: string }[] | null)?.[0];
+  return row ? { userId: row.user_id, expiresAt: row.expires_at } : null;
+}
+
+/**
+ * Gives back a used link whose action changed nothing, with its original expiry.
+ * An insert, so a link requested in the meantime is not overwritten.
+ */
+export async function restoreLink(
+  raw: string,
+  purpose: LinkPurpose,
+  { userId, expiresAt }: UsedLink,
+): Promise<void> {
+  const { error } = await getSupabaseAdmin()
+    .from(TABLE)
+    .insert({
+      user_id: userId,
+      purpose,
+      token_hash: hashToken(raw),
+      expires_at: expiresAt,
+    });
+  // 23505: the user already has a newer link for this.
+  if (error && (error as { code?: string }).code !== "23505") {
+    check("restore", error);
+  }
 }

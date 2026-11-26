@@ -115,8 +115,9 @@ Rules:
 - Random token, stored only as a hash. Lasts 30 minutes, works once. One live link per user per
   purpose: a new request replaces the old.
 - The purpose comes from the stored row, never from the URL.
-- Consume atomically, after validating the input, so two clicks cannot both run. If the action
-  then fails, the user requests a new link.
+- Consume atomically, after validating the input, so two clicks cannot both run. If Supabase
+  rejects the new password, the link is given back with its original expiry and the page asks
+  for a different one. If the action fails otherwise, the user requests a new link.
 - Rate limits through `bump_attempts`: 3 link requests per 10 minutes per account; 10
   confirmations per 10 minutes per client.
 - Links are built from `SITE_URL`. The page is `noindex` and sends no referrer.

@@ -2,8 +2,17 @@
 
 import { headers } from "next/headers";
 
-import { deleteAccount, setPassword } from "@/lib/account/admin";
-import { consumeLink, issueLink, type LinkPurpose } from "@/lib/account/links";
+import {
+  deleteAccount,
+  PasswordRejectedError,
+  setPassword,
+} from "@/lib/account/admin";
+import {
+  consumeLink,
+  issueLink,
+  restoreLink,
+  type LinkPurpose,
+} from "@/lib/account/links";
 import { signOutSession } from "@/lib/auth/accounts";
 import { checkAttempts } from "@/lib/auth/attempts";
 import { ACCOUNT_LIMITS } from "@/lib/auth/constants";
@@ -28,7 +37,7 @@ export type RequestLinkResult =
 
 export type ConfirmResult =
   | { ok: true }
-  | { ok: false; error: "expired" | "server_error" }
+  | { ok: false; error: "expired" | "rejected" | "server_error" }
   | {
       ok: false;
       error: "password";
@@ -103,7 +112,14 @@ async function confirmLink(
     const current = await getUser();
     const link = await consumeLink(token, purpose);
     if (!link) return { ok: false, error: "expired" };
-    await act(link.userId);
+    try {
+      await act(link.userId);
+    } catch (err) {
+      if (!(err instanceof PasswordRejectedError)) throw err;
+      // Nothing changed: the same link can be tried with another password.
+      await restoreLink(token, purpose, link);
+      return { ok: false, error: "rejected" };
+    }
     // Only the link's own account: another user of this browser stays signed in.
     if (current?.id === link.userId) {
       try {

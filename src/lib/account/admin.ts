@@ -6,6 +6,11 @@ function check(context: string, error: { message: string } | null) {
   if (error) throw new Error(`account admin: ${context}: ${error.message}`);
 }
 
+/** Supabase's own rules refused the password: another one may be accepted. */
+export class PasswordRejectedError extends Error {}
+
+const REJECTED = new Set(["weak_password", "same_password"]);
+
 /**
  * Sets a new password and ends every session of the user. Sessions go first, so
  * a failure there leaves the password unchanged rather than changed with old
@@ -22,6 +27,9 @@ export async function setPassword(
   };
   await endSessions();
   const { error } = await db.auth.admin.updateUserById(userId, { password });
+  if (error?.code && REJECTED.has(error.code)) {
+    throw new PasswordRejectedError(error.code);
+  }
   check("set password", error);
   await endSessions();
 }

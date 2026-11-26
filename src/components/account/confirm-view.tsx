@@ -22,6 +22,8 @@ function message(failure: Failure): string {
   switch (failure.error) {
     case "password":
       return PASSWORD_MESSAGES[failure.passwordError];
+    case "rejected":
+      return "That password was rejected. Choose a different one.";
     case "rate_limited":
       return "Too many attempts. Please wait a few minutes and try again.";
     default:

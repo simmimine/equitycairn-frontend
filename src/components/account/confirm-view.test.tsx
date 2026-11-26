@@ -91,6 +91,10 @@ describe("ConfirmView", () => {
       { ok: false, error: "server_error" },
       "Something went wrong. Request a new link from Settings and try again.",
     ],
+    [
+      { ok: false, error: "rejected" },
+      "That password was rejected. Choose a different one.",
+    ],
   ])("keeps the form and explains %o", async (result, text) => {
     changePassword.mockResolvedValue(result);
     const user = show("password_change");

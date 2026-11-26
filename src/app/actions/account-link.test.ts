@@ -5,6 +5,8 @@ const signOutSession = vi.fn();
 const checkAttempts = vi.fn();
 const issueLink = vi.fn();
 const consumeLink = vi.fn();
+const restoreLink = vi.fn();
+const Rejected = vi.hoisted(() => class PasswordRejectedError extends Error {});
 const setPassword = vi.fn();
 const deleteAccount = vi.fn();
 const sendAccountLinkEmail = vi.fn();
@@ -23,8 +25,10 @@ vi.mock("@/lib/auth/attempts", () => ({
 vi.mock("@/lib/account/links", () => ({
   issueLink: (...a: unknown[]) => issueLink(...a),
   consumeLink: (...a: unknown[]) => consumeLink(...a),
+  restoreLink: (...a: unknown[]) => restoreLink(...a),
 }));
 vi.mock("@/lib/account/admin", () => ({
+  PasswordRejectedError: Rejected,
   setPassword: (...a: unknown[]) => setPassword(...a),
   deleteAccount: (...a: unknown[]) => deleteAccount(...a),
 }));
@@ -181,6 +185,28 @@ describe("confirmPasswordChange", () => {
   it("still succeeds when clearing the session fails", async () => {
     signOutSession.mockRejectedValue(new Error("gone"));
     expect(await confirmPasswordChange(TOKEN, PW, PW)).toEqual({ ok: true });
+  });
+
+  it("gives the link back when Supabase rejects the password", async () => {
+    const link = { userId: "u1", expiresAt: "2026-11-26T10:20:00+00:00" };
+    consumeLink.mockResolvedValue(link);
+    setPassword.mockRejectedValue(new Rejected("weak"));
+    expect(await confirmPasswordChange(TOKEN, PW, PW)).toEqual({
+      ok: false,
+      error: "rejected",
+    });
+    expect(restoreLink).toHaveBeenCalledWith(TOKEN, "password_change", link);
+    expect(signOutSession).not.toHaveBeenCalled();
+  });
+
+  it("asks for a new link if the old one cannot be given back", async () => {
+    vi.spyOn(console, "error").mockImplementation(() => {});
+    setPassword.mockRejectedValue(new Rejected("weak"));
+    restoreLink.mockRejectedValue(new Error("down"));
+    expect(await confirmPasswordChange(TOKEN, PW, PW)).toEqual({
+      ok: false,
+      error: "server_error",
+    });
   });
 
   it("reports a failed change", async () => {

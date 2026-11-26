@@ -9,7 +9,7 @@ vi.mock("@/lib/supabase/server", () => ({
   getSupabaseAdmin: () => ({ rpc, auth: { admin: { updateUserById } } }),
 }));
 
-import { deleteAccount, setPassword } from "./admin";
+import { deleteAccount, PasswordRejectedError, setPassword } from "./admin";
 
 beforeEach(() => {
   order.length = 0;
@@ -37,6 +37,25 @@ describe("setPassword", () => {
     rpc.mockResolvedValue({ error: { message: "permission denied" } });
     await expect(setPassword("u1", "pw")).rejects.toThrow();
     expect(updateUserById).not.toHaveBeenCalled();
+  });
+
+  it.each(["weak_password", "same_password"])(
+    "says when Supabase rejects the password (%s)",
+    async (code) => {
+      updateUserById.mockResolvedValue({ error: { code, message: "no" } });
+      await expect(setPassword("u1", "pw")).rejects.toThrow(
+        PasswordRejectedError,
+      );
+    },
+  );
+
+  it("treats other update failures as failures", async () => {
+    updateUserById.mockResolvedValue({
+      error: { code: "unexpected_failure", message: "no" },
+    });
+    await expect(setPassword("u1", "pw")).rejects.not.toThrow(
+      PasswordRejectedError,
+    );
   });
 
   it("throws when the update fails", async () => {

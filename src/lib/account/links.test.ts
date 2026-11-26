@@ -10,6 +10,7 @@ function query() {
   };
   for (const m of [
     "upsert",
+    "insert",
     "delete",
     "update",
     "select",
@@ -36,7 +37,7 @@ vi.mock("@/lib/supabase/server", () => ({
 
 import { hashToken } from "@/lib/signup/tokens";
 
-import { consumeLink, issueLink, peekLink } from "./links";
+import { consumeLink, issueLink, peekLink, restoreLink } from "./links";
 
 const NOW = new Date("2026-11-26T10:00:00Z");
 
@@ -73,9 +74,11 @@ describe("issueLink", () => {
 
 describe("consumeLink", () => {
   it("is one delete filtered by hash, purpose and expiry", async () => {
-    result = { data: [{ user_id: "u1" }], error: null };
+    const expires = "2026-11-26T10:20:00+00:00";
+    result = { data: [{ user_id: "u1", expires_at: expires }], error: null };
     expect(await consumeLink("raw", "account_delete", NOW)).toEqual({
       userId: "u1",
+      expiresAt: expires,
     });
     expect(calls).toEqual([
       ["from", "account_action_tokens"],
@@ -83,7 +86,7 @@ describe("consumeLink", () => {
       ["eq", "token_hash", hashToken("raw")],
       ["eq", "purpose", "account_delete"],
       ["gt", "expires_at", NOW.toISOString()],
-      ["select", "user_id"],
+      ["select", "user_id,expires_at"],
     ]);
   });
 
@@ -117,5 +120,37 @@ describe("peekLink", () => {
 
   it("returns null when nothing live matches", async () => {
     expect(await peekLink("raw", NOW)).toBeNull();
+  });
+});
+
+describe("restoreLink", () => {
+  const LINK = { userId: "u1", expiresAt: "2026-11-26T10:20:00+00:00" };
+
+  it("puts the same link back without extending it", async () => {
+    await restoreLink("raw", "password_change", LINK);
+    expect(calls).toEqual([
+      ["from", "account_action_tokens"],
+      [
+        "insert",
+        {
+          user_id: "u1",
+          purpose: "password_change",
+          token_hash: hashToken("raw"),
+          expires_at: LINK.expiresAt,
+        },
+      ],
+    ]);
+  });
+
+  it("leaves a newer link in place", async () => {
+    result = { error: { code: "23505", message: "duplicate" } as never };
+    await expect(
+      restoreLink("raw", "password_change", LINK),
+    ).resolves.toBeUndefined();
+  });
+
+  it("throws on another database error", async () => {
+    result = { error: { message: "down" } };
+    await expect(restoreLink("raw", "password_change", LINK)).rejects.toThrow();
   });
 });
