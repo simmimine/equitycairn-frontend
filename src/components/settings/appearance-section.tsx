@@ -25,7 +25,11 @@ export function AppearanceSection() {
   );
   return (
     <SettingsCard id="appearance" title="Appearance">
-      <div id="setting-theme" tabIndex={-1}>
+      <div
+        id="setting-theme"
+        tabIndex={-1}
+        className="rounded-sm outline-none focus:ring-3 focus:ring-ring/50"
+      >
         <OptionCards
           legend="Applies to this device."
           value={mounted ? (theme ?? "system") : ""}

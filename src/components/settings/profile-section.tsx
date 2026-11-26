@@ -110,7 +110,11 @@ export function ProfileSection({
             "family-name",
           )}
         </div>
-        <div id="setting-role" tabIndex={-1}>
+        <div
+          id="setting-role"
+          tabIndex={-1}
+          className="rounded-sm outline-none focus:ring-3 focus:ring-ring/50"
+        >
           <OptionCards
             legend="Role"
             value={role}
@@ -119,7 +123,11 @@ export function ProfileSection({
             clearable={false}
           />
         </div>
-        <div id="setting-experience" tabIndex={-1}>
+        <div
+          id="setting-experience"
+          tabIndex={-1}
+          className="rounded-sm outline-none focus:ring-3 focus:ring-ring/50"
+        >
           <OptionCards
             legend="Experience"
             value={experience}

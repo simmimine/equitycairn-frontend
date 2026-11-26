@@ -6,6 +6,8 @@ import { useRef } from "react";
 import { AccountMenu } from "@/components/feed/account-menu";
 import { useHeightVariable } from "@/components/feed/use-height-variable";
 
+import { SettingsSearch } from "./settings-search";
+
 export function SettingsHeader({
   firstName,
   signOutAction,
@@ -25,7 +27,8 @@ export function SettingsHeader({
         >
           equitycairn
         </Link>
-        <div className="ml-auto flex items-center gap-2 md:col-start-3 md:justify-self-end">
+        <SettingsSearch />
+        <div className="flex items-center gap-2 md:justify-self-end">
           <AccountMenu firstName={firstName} signOutAction={signOutAction} />
         </div>
       </div>
