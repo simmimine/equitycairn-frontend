@@ -92,7 +92,8 @@ export async function signInWithPassword(
   throw new Error(`accounts: sign in: ${error.code ?? "unknown"}`);
 }
 
-export async function signOutSession(): Promise<void> {
+/** `local` ends this device's session; `global` ends every session. */
+export async function signOutSession(scope: "local" | "global"): Promise<void> {
   const supabase = await createSessionClient();
-  await supabase.auth.signOut();
+  await supabase.auth.signOut({ scope });
 }

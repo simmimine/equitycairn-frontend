@@ -1,6 +1,8 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
+import { SESSION_COOKIE_OPTIONS } from "@/lib/auth/constants";
+
 // Optimistic only: refreshes the session cookie and redirects early. It is NOT
 // the security boundary; every protected page and action re-checks the session
 // in server code with getUser().
@@ -12,6 +14,7 @@ export async function proxy(request: NextRequest) {
 
   if (url && key) {
     const supabase = createServerClient(url, key, {
+      cookieOptions: SESSION_COOKIE_OPTIONS,
       cookies: {
         getAll: () => request.cookies.getAll(),
         setAll(list) {

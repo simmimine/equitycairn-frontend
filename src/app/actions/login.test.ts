@@ -54,6 +54,7 @@ import {
   resendBetaVerification,
   signIn,
   signOut,
+  signOutEverywhere,
 } from "./login";
 
 const EMAIL = "ann@example.com";
@@ -240,9 +241,14 @@ describe("signIn", () => {
 });
 
 describe("signOut", () => {
-  it("clears the session and redirects home", async () => {
+  it("ends only this device's session and redirects home", async () => {
     await expect(signOut()).rejects.toThrow("NEXT_REDIRECT:/");
-    expect(signOutSession).toHaveBeenCalled();
+    expect(signOutSession).toHaveBeenCalledWith("local");
+  });
+
+  it("can end every session", async () => {
+    await expect(signOutEverywhere()).rejects.toThrow("NEXT_REDIRECT:/");
+    expect(signOutSession).toHaveBeenCalledWith("global");
   });
 });
 

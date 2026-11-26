@@ -205,6 +205,11 @@ export async function signIn(
 }
 
 export async function signOut(): Promise<void> {
-  await signOutSession();
+  await signOutSession("local");
+  redirect("/");
+}
+
+export async function signOutEverywhere(): Promise<void> {
+  await signOutSession("global");
   redirect("/");
 }
