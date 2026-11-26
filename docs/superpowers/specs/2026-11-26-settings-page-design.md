@@ -115,12 +115,22 @@ Rules:
 ### What this does and does not protect
 
 The link rule governs EquityCairn's own screens. Supabase's account API also lets whoever holds
-a signed-in session change the password or email directly. To narrow that:
+a signed-in session change the password or email directly. To guard against that:
 
+- **Turn on "Require current password when changing"** in the Supabase dashboard (owner's step,
+  before release). A direct password change then needs the current password. Confirm on the
+  real project that a direct change without it is refused, and that the emailed-link flow
+  (admin API) still works.
+- **Hide the session cookie from page scripts:** set `httpOnly` wherever the Supabase server
+  client writes cookies (`src/lib/auth/session.ts` and `src/proxy.ts`). Supabase's default is
+  readable by scripts. Nothing in `src` creates a browser-side Supabase client; keep it that
+  way. Check that sign-in, refresh and sign-out still work.
 - A database trigger refuses changes to `auth.users.email` (this also stops an email change
   getting round the beta list).
-- Turn on "Secure password change" in the Supabase dashboard (owner's step). It does not cover
-  every case, such as a very recent sign-in. Accepted for the beta.
+
+What is left, accepted for the beta: a stolen session can still read and edit the profile and
+watchlist until it ends (an issued access token works until it expires), and none of this stops
+someone who also knows the password or controls the inbox.
 
 ## Bug reports
 
