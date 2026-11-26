@@ -31,6 +31,7 @@ import {
   parseStored,
   toggleTicker,
 } from "@/lib/onboarding/companies";
+import { EXPERIENCE_OPTIONS, ROLE_OPTIONS } from "@/lib/onboarding/schema";
 
 export type OnboardingStep = "name" | "about" | "welcome" | "watchlist";
 
@@ -59,20 +60,6 @@ const REAL_ACTIONS: OnboardingActions = {
 
 const STEPS: OnboardingStep[] = ["name", "about", "welcome", "watchlist"];
 const FORM_ID = "onboarding-form";
-
-const ROLES = [
-  ["retail_investor", "Retail investor"],
-  ["institutional_investor", "Institutional investor"],
-  ["researcher_analyst", "Researcher / analyst"],
-  ["financial_adviser", "Financial adviser"],
-  ["other", "Other"],
-] as const;
-
-const EXPERIENCES = [
-  ["beginner", "Beginner"],
-  ["intermediate", "Intermediate"],
-  ["experienced", "Experienced"],
-] as const;
 
 function errorText(
   step: OnboardingStep,
@@ -380,13 +367,13 @@ export function OnboardingFlow({
           <FieldGroup>
             <OptionCards
               legend="What best describes your role?"
-              options={ROLES}
+              options={ROLE_OPTIONS}
               value={role}
               onValueChange={setRole}
             />
             <OptionCards
               legend="How would you describe your experience?"
-              options={EXPERIENCES}
+              options={EXPERIENCE_OPTIONS}
               value={experience}
               onValueChange={setExperience}
             />

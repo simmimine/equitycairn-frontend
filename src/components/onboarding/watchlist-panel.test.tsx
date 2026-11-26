@@ -19,6 +19,15 @@ describe("WatchlistPanel", () => {
     expect(screen.getByText("2 / 10")).toBeInTheDocument();
   });
 
+  // jsdom lays nothing out (e2e/onboarding.spec.ts measures it): this pins the
+  // limit to the viewport, the element that scrolls.
+  it("limits the height of the scrolling element itself", () => {
+    render(<WatchlistPanel selected={["AAPL"]} onRemove={vi.fn()} />);
+    expect(
+      screen.getByRole("list").closest("[data-slot=scroll-area]"),
+    ).toHaveClass("[&>[data-slot=scroll-area-viewport]]:max-h-64");
+  });
+
   it("removes a pick", async () => {
     const onRemove = vi.fn();
     render(<WatchlistPanel selected={["AAPL"]} onRemove={onRemove} />);

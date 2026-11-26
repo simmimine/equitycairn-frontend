@@ -1,0 +1,45 @@
+"use client";
+
+import { useTheme } from "next-themes";
+import { useSyncExternalStore } from "react";
+
+import { OptionCards } from "@/components/onboarding/option-cards";
+
+import { CHOICE, SettingsCard } from "./parts";
+
+const THEMES = [
+  ["light", "Light"],
+  ["dark", "Dark"],
+  ["system", "System"],
+] as const;
+
+const noChanges = () => () => {};
+
+export function AppearanceSection() {
+  const { theme, setTheme } = useTheme();
+  // The server cannot know the stored theme: mark none until hydrated.
+  const mounted = useSyncExternalStore(
+    noChanges,
+    () => true,
+    () => false,
+  );
+  return (
+    <SettingsCard id="appearance" title="Appearance">
+      <div
+        id="setting-theme"
+        tabIndex={-1}
+        className="rounded-sm outline-none focus:ring-3 focus:ring-ring/50"
+      >
+        <OptionCards
+          legend="Applies to this device."
+          value={mounted ? (theme ?? "system") : ""}
+          onValueChange={setTheme}
+          options={THEMES}
+          clearable={false}
+          legendClassName="text-[0.6875rem] font-normal text-muted-foreground"
+          cardClassName={CHOICE}
+        />
+      </div>
+    </SettingsCard>
+  );
+}

@@ -7,6 +7,7 @@ const getAccountState = vi.fn();
 const createPendingAccount = vi.fn();
 const signInWithPassword = vi.fn();
 const signOutSession = vi.fn();
+const getUser = vi.fn();
 const checkAttempts = vi.fn();
 const sendVerificationEmail = vi.fn();
 const sendConfirmEmail = vi.fn();
@@ -27,6 +28,7 @@ vi.mock("@/lib/auth/accounts", () => ({
   signInWithPassword: (...a: unknown[]) => signInWithPassword(...a),
   signOutSession: (...a: unknown[]) => signOutSession(...a),
 }));
+vi.mock("@/lib/auth/session", () => ({ getUser: () => getUser() }));
 vi.mock("@/lib/auth/attempts", () => ({
   checkAttempts: (...a: unknown[]) => checkAttempts(...a),
 }));
@@ -54,6 +56,7 @@ import {
   resendBetaVerification,
   signIn,
   signOut,
+  signOutEverywhere,
 } from "./login";
 
 const EMAIL = "ann@example.com";
@@ -240,9 +243,41 @@ describe("signIn", () => {
 });
 
 describe("signOut", () => {
-  it("clears the session and redirects home", async () => {
+  it("ends only this device's session and redirects home", async () => {
     await expect(signOut()).rejects.toThrow("NEXT_REDIRECT:/");
-    expect(signOutSession).toHaveBeenCalled();
+    expect(signOutSession).toHaveBeenCalledWith("local");
+  });
+
+  it("can end every session", async () => {
+    getUser.mockResolvedValue({ id: "u1" });
+    signOutSession.mockResolvedValue(true);
+    await expect(signOutEverywhere()).rejects.toThrow("NEXT_REDIRECT:/");
+    expect(signOutSession).toHaveBeenCalledWith("global");
+  });
+
+  it("does not claim to have ended every session without one", async () => {
+    getUser.mockResolvedValue(null);
+    expect(await signOutEverywhere()).toEqual({
+      ok: false,
+      error: "unauthenticated",
+    });
+    expect(signOutSession).not.toHaveBeenCalled();
+    expect(redirect).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    ["is refused", () => signOutSession.mockResolvedValue(false)],
+    ["throws", () => signOutSession.mockRejectedValue(new Error("down"))],
+  ])("says so when ending every session %s", async (_, arrange) => {
+    const log = vi.spyOn(console, "error").mockImplementation(() => {});
+    getUser.mockResolvedValue({ id: "u1" });
+    arrange();
+    expect(await signOutEverywhere()).toEqual({
+      ok: false,
+      error: "server_error",
+    });
+    expect(redirect).not.toHaveBeenCalled();
+    log.mockRestore();
   });
 });
 

@@ -92,7 +92,14 @@ export async function signInWithPassword(
   throw new Error(`accounts: sign in: ${error.code ?? "unknown"}`);
 }
 
-export async function signOutSession(): Promise<void> {
+/**
+ * `local` ends this device's session; `global` ends every session. False when
+ * Supabase could not do it.
+ */
+export async function signOutSession(
+  scope: "local" | "global",
+): Promise<boolean> {
   const supabase = await createSessionClient();
-  await supabase.auth.signOut();
+  const { error } = await supabase.auth.signOut({ scope });
+  return !error;
 }

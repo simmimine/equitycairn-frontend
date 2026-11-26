@@ -76,6 +76,17 @@ describe("Sidebar", () => {
     expect(screen.getByText("Personal workspace")).toBeInTheDocument();
   });
 
+  it.each([
+    ["ann", /ann/],
+    [null, /Your account/],
+  ])("makes the whole profile row one link to settings (%s)", (name, label) => {
+    renderSidebar(undefined, name);
+    const link = screen.getByRole("link", { name: label });
+    expect(link).toHaveAttribute("href", "/settings?from=/feed");
+    expect(link).toHaveTextContent("Personal workspace");
+    expect(link).toHaveClass("focus-visible:ring-3");
+  });
+
   it("still reads sensibly with no first name", () => {
     renderSidebar([], null);
     expect(screen.getByText("Your account")).toBeInTheDocument();

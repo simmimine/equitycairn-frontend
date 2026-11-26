@@ -6,6 +6,8 @@ import { cookies } from "next/headers";
 import { connection } from "next/server";
 import { redirect } from "next/navigation";
 
+import { SESSION_COOKIE_OPTIONS } from "./constants";
+
 /** Supabase client bound to the request's session cookies (RLS applies as the user). */
 export async function createSessionClient(): Promise<SupabaseClient> {
   // Read the request first: this makes the route dynamic, so `next build` never
@@ -21,6 +23,7 @@ export async function createSessionClient(): Promise<SupabaseClient> {
     throw new Error("Missing SUPABASE_URL or SUPABASE_PUBLISHABLE_KEY");
   }
   return createServerClient(url, key, {
+    cookieOptions: SESSION_COOKIE_OPTIONS,
     cookies: {
       getAll: () => store.getAll(),
       setAll(list) {

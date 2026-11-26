@@ -9,12 +9,12 @@ import {
   useLayoutEffect,
   useRef,
   useState,
-  useSyncExternalStore,
 } from "react";
 import { flushSync } from "react-dom";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { isSearchShortcut, useShortcutHint } from "@/lib/search-shortcut";
 
 import { AccountMenu } from "./account-menu";
 import { useComingSoon } from "./coming-soon";
@@ -26,25 +26,6 @@ const SEARCH_LABEL = "Search companies, tickers, or stories";
 const DESKTOP = "(min-width: 48rem)";
 
 const isDesktop = () => window.matchMedia(DESKTOP).matches;
-
-/** True for Ctrl+K or ⌘K, on any keyboard layout. */
-function isSearchShortcut(event: KeyboardEvent) {
-  if (!(event.metaKey || event.ctrlKey)) return false;
-  if (event.altKey || event.shiftKey) return false;
-  // A Latin layout names the letter (Dvorak's K key types T). A layout in
-  // another script gives a letter of its own, so go by the key's place,
-  // where QWERTY has K.
-  if (/^[a-z]$/i.test(event.key)) return event.key.toLowerCase() === "k";
-  return /^\p{L}$/u.test(event.key) && event.code === "KeyK";
-}
-
-// The platform never changes, so there is nothing to subscribe to.
-const noChanges = () => () => {};
-const shortcutHint = () =>
-  /Mac|iPhone|iPad|iPod/.test(navigator.platform) ? "⌘ K" : "Ctrl K";
-// The server cannot know the platform: no hint until hydrated, so the
-// server and first client render agree.
-const noHint = () => null;
 
 export function AppHeader({
   query,
@@ -108,7 +89,7 @@ export function AppHeader({
     return () => desktop.removeEventListener("change", onChange);
   }, []);
 
-  const hint = useSyncExternalStore(noChanges, shortcutHint, noHint);
+  const hint = useShortcutHint();
 
   return (
     <header ref={header} className="sticky top-0 z-20 border-b bg-card">

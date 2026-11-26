@@ -1,6 +1,8 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
+import { SESSION_COOKIE_OPTIONS } from "@/lib/auth/constants";
+
 // Optimistic only: refreshes the session cookie and redirects early. It is NOT
 // the security boundary; every protected page and action re-checks the session
 // in server code with getUser().
@@ -12,6 +14,7 @@ export async function proxy(request: NextRequest) {
 
   if (url && key) {
     const supabase = createServerClient(url, key, {
+      cookieOptions: SESSION_COOKIE_OPTIONS,
       cookies: {
         getAll: () => request.cookies.getAll(),
         setAll(list) {
@@ -28,7 +31,11 @@ export async function proxy(request: NextRequest) {
   }
 
   const path = request.nextUrl.pathname;
-  if (!authed && path !== "/login") {
+  // A settings action from an expired session must reach the action, which refuses it
+  // and lets the page say so while keeping what was typed. A redirect would not.
+  const settingsAction =
+    path === "/settings" && request.headers.has("next-action");
+  if (!authed && path !== "/login" && !settingsAction) {
     return NextResponse.redirect(new URL("/login", request.url));
   }
   if (authed && path === "/login") {
@@ -38,5 +45,5 @@ export async function proxy(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/feed/:path*", "/onboarding/:path*", "/login"],
+  matcher: ["/feed/:path*", "/onboarding/:path*", "/settings/:path*", "/login"],
 };

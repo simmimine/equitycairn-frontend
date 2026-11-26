@@ -41,10 +41,7 @@ describe("TabBar", () => {
 
   it("labels each tab beside a decorative icon", () => {
     renderTabBar();
-    const items = [
-      ...within(tabs()).getAllByRole("link"),
-      ...within(tabs()).getAllByRole("button"),
-    ];
+    const items = [...tabs().children] as HTMLElement[];
     expect(items.map((item) => item.textContent)).toEqual([
       "Feed",
       "Watchlist",
@@ -59,11 +56,34 @@ describe("TabBar", () => {
   it.each([
     ["Watchlist", "Watchlist is coming soon."],
     ["Saved", "Saved stories is coming soon."],
-    ["Profile", "Profile is coming soon."],
   ])("shows a notice for %s", (name, notice) => {
     renderTabBar();
     fireEvent.click(within(tabs()).getByRole("button", { name }));
     expect(screen.getByRole("status")).toHaveTextContent(notice);
+  });
+
+  it("links the profile tab to settings", () => {
+    renderTabBar();
+    const link = within(tabs()).getByRole("link", { name: "Profile" });
+    expect(link).toHaveAttribute("href", "/settings?from=/feed");
+    expect(link).not.toHaveAttribute("aria-current");
+  });
+
+  it("marks profile as current on settings", () => {
+    render(
+      <ComingSoonProvider>
+        <TabBar current="profile" />
+      </ComingSoonProvider>,
+    );
+    const link = within(tabs()).getByRole("link", { name: "Profile" });
+    expect(link).toHaveAttribute("aria-current", "page");
+    expect(link).toHaveAttribute("href", "/settings");
+    expect(
+      link.querySelector('[data-slot="tab-indicator"]'),
+    ).toBeInTheDocument();
+    expect(
+      within(tabs()).getByRole("link", { name: "Feed" }),
+    ).not.toHaveAttribute("aria-current");
   });
 
   it("marks the current tab with a bar, not only colour", () => {

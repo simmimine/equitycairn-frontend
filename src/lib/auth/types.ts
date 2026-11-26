@@ -42,3 +42,8 @@ export type SignInResult =
         | "server_error";
     }
   | { ok: false; error: "rate_limited"; retryAfterSeconds: number };
+
+export type SignOutEverywhereResult = {
+  ok: false;
+  error: "unauthenticated" | "server_error";
+};

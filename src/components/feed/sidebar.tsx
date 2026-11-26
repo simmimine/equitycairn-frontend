@@ -25,7 +25,7 @@ export function Sidebar({
   const comingSoon = useComingSoon();
   const aside = useRef<HTMLElement>(null);
   const scrolls = useScrolls(aside);
-  const profile = useRef<HTMLDivElement>(null);
+  const profile = useRef<HTMLAnchorElement>(null);
   useHeightVariable(profile, "--feed-profile-height");
   return (
     <aside
@@ -98,9 +98,13 @@ export function Sidebar({
       </div>
       {/* Stays in view while a long watchlist scrolls under it; the scroll
           padding above keeps focused controls from ending up underneath. */}
-      <div
+      <Link
         ref={profile}
-        className="sticky bottom-0 flex items-center gap-3 bg-card px-3 pt-4 pb-5"
+        href="/settings?from=/feed"
+        className={cn(
+          FOCUS_RING,
+          "sticky bottom-0 flex items-center gap-3 rounded-[10px] bg-card px-3 pt-4 pb-5 focus-visible:ring-inset",
+        )}
       >
         <UserInitial firstName={firstName} />
         <div className="flex min-w-0 flex-col">
@@ -111,7 +115,7 @@ export function Sidebar({
             Personal workspace
           </p>
         </div>
-      </div>
+      </Link>
     </aside>
   );
 }

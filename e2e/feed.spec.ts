@@ -268,7 +268,6 @@ test.describe("feed page", () => {
       ? [
           [tabs.getByRole("button", { name: "Watchlist" }), "Watchlist"],
           [tabs.getByRole("button", { name: "Saved" }), "Saved stories"],
-          [tabs.getByRole("button", { name: "Profile" }), "Profile"],
           [
             page.getByRole("button", { name: "Report a ticker mismatch" }),
             "Mismatch reporting",
@@ -316,7 +315,7 @@ test.describe("feed page", () => {
     const control = isMobile(page)
       ? page
           .getByRole("navigation", { name: "Tabs" })
-          .getByRole("button", { name: "Profile" })
+          .getByRole("button", { name: "Watchlist" })
       : page.getByRole("button", { name: "Help" });
     await control.focus();
     await page.keyboard.press("Enter");
@@ -405,7 +404,7 @@ test.describe("feed page", () => {
   test("the notice sits clear of the tab bar", async ({ page }) => {
     test.skip(!isMobile(page), "the tab bar is phone only");
     const tabs = page.getByRole("navigation", { name: "Tabs" });
-    await tabs.getByRole("button", { name: "Profile" }).click();
+    await tabs.getByRole("button", { name: "Watchlist" }).click();
     const box = (await notice(page).locator("> div").boundingBox())!;
     const bar = (await tabs.boundingBox())!;
     expect(box.y + box.height).toBeLessThanOrEqual(bar.y);
@@ -422,6 +421,24 @@ test.describe("feed page", () => {
     await expect(link).toHaveAttribute("target", "_blank");
     await expect(link).toHaveAttribute("rel", "noopener noreferrer");
     await expect(link).toContainText("(opens in a new tab)");
+  });
+
+  test("links to settings from the menu, sidebar or tab bar", async ({
+    page,
+  }) => {
+    const href = "/settings?from=/feed";
+    const profile = isMobile(page)
+      ? page
+          .getByRole("navigation", { name: "Tabs" })
+          .getByRole("link", { name: "Profile" })
+      : page
+          .getByRole("complementary", { name: "Sidebar" })
+          .getByRole("link", { name: /Personal workspace/ });
+    await expect(profile).toHaveAttribute("href", href);
+    await page.getByRole("button", { name: "Account menu" }).click();
+    await expect(
+      page.getByRole("dialog").getByRole("link", { name: "Settings" }),
+    ).toHaveAttribute("href", href);
   });
 
   test("the account menu signs out", async ({ page }) => {
@@ -582,6 +599,7 @@ test.describe("keyboard", () => {
           "News feed",
           "Saved stories",
           "Manage watchlist",
+          "SSimeonPersonal workspace",
           "All",
           ...DEFAULT,
           "Time range",

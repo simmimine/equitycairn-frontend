@@ -2,6 +2,12 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const cookies = vi.fn();
 const connection = vi.fn();
+const createServerClient = vi.hoisted(() => vi.fn());
+vi.mock("@supabase/ssr", async (importOriginal) => {
+  const real = await importOriginal<typeof import("@supabase/ssr")>();
+  createServerClient.mockImplementation(real.createServerClient);
+  return { createServerClient };
+});
 vi.mock("server-only", () => ({}));
 vi.mock("next/headers", () => ({ cookies: () => cookies() }));
 vi.mock("next/server", () => ({ connection: () => connection() }));
@@ -45,6 +51,15 @@ describe("createSessionClient", () => {
     process.env.SUPABASE_PUBLISHABLE_KEY = "sb_publishable_test";
     await createSessionClient();
     expect(connection).toHaveBeenCalled();
+  });
+
+  it("hides the session cookie from page scripts", async () => {
+    process.env.SUPABASE_URL = "http://localhost:54321";
+    process.env.SUPABASE_PUBLISHABLE_KEY = "sb_publishable_test";
+    await createSessionClient();
+    expect(createServerClient.mock.lastCall?.[2].cookieOptions).toEqual({
+      httpOnly: true,
+    });
   });
 
   it("builds a client when configured", async () => {

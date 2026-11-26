@@ -3,9 +3,10 @@
 import { Popover } from "@base-ui/react/popover";
 import { cn } from "cn";
 import { User } from "lucide-react";
+import Link from "next/link";
 import { useLayoutEffect, useState } from "react";
 
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 
 /** The first letter of the name on a disc; a person icon without a name. */
 export function UserInitial({
@@ -32,9 +33,11 @@ export function UserInitial({
 export function AccountMenu({
   firstName,
   signOutAction,
+  settingsHref = "/settings?from=/feed",
 }: {
   firstName: string | null;
   signOutAction: () => void | Promise<void>;
+  settingsHref?: string;
 }) {
   const [open, setOpen] = useState(false);
   // A hidden route keeps its state (Activity): do not come back with this open.
@@ -54,6 +57,13 @@ export function AccountMenu({
             <Popover.Title className="truncate text-sm font-semibold">
               {firstName?.trim() || "Your account"}
             </Popover.Title>
+            <Link
+              href={settingsHref}
+              onClick={() => setOpen(false)}
+              className={cn(buttonVariants({ variant: "outline" }), "w-full")}
+            >
+              Settings
+            </Link>
             <form action={signOutAction}>
               <Button type="submit" variant="outline" className="w-full">
                 Sign out
