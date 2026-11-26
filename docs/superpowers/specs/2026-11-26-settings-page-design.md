@@ -1,6 +1,6 @@
 # Settings page
 
-Status: draft, awaiting approval. Notion: "EquityCairn — Settings Page Brainstorm".
+Status: approved by the owner on 2026-11-26. Notion: "EquityCairn — Settings Page Brainstorm".
 
 ## Intent
 
@@ -148,9 +148,9 @@ someone who also knows the password or controls the inbox.
 
 ## Account deletion
 
-Removes the auth account; profile and watchlist cascade. **Proposed, needs the owner's yes:**
-also delete the person's beta sign-up record and bug reports. They would need to join the beta
-list again to return.
+Removes the auth account; profile and watchlist cascade. It also deletes the person's beta
+sign-up record and bug reports (owner's decision), so they must join the beta list again to
+return. Emails already sent to the owner about their reports are not recalled.
 
 ## Configuration
 
